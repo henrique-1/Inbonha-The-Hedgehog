@@ -1,114 +1,62 @@
-name: Build and Release
+name: Build Inbonha The Hedgehog
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: ["main", "master"]
   pull_request:
-    branches:
-      - main
-      - master
+    branches: ["main", "master"]
 
 jobs:
-  build-windows:
-    name: Build for Windows
-    runs-on: windows-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set Incremental Version
-        id: version
-        # Formata o número da build com zero à esquerda (ex: 01, 02)
-        run: |
-          $buildNum = "{0:D2}" -f ${{ github.run_number }}
-          echo "BUILD_VERSION=Build-$buildNum" >> $env:GITHUB_ENV
-
-      - name: Compile Project
-        # Utiliza o script nativo já existente no projeto
-        run: .\build.ps1 -compile
-
-      - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Windows-Executable-${{ env.BUILD_VERSION }}
-          path: "*.exe"
-          if-no-files-found: error
-
+  # ==========================================
+  # JOB 1: BUILD NO LINUX
+  # ==========================================
   build-linux:
-    name: Build AppImage for Linux
+    name: Build on Ubuntu
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
+      - name: Checkout do repositório
         uses: actions/checkout@v4
 
-      - name: Set Incremental Version
-        id: version
-        run: |
-          BUILD_NUM=$(printf "%02d" ${{ github.run_number }})
-          echo "BUILD_VERSION=Build-$BUILD_NUM" >> $GITHUB_ENV
-          echo "VERSION=$BUILD_NUM" >> $GITHUB_ENV
-
-      - name: Install System Dependencies
-        # Instala as dependências necessárias para compilar a raylib e o OpenGL no ambiente Linux
+      - name: Instalar dependências gráficas
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc make libraylib-dev libasound2-dev libx11-dev \
-                                  libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev \
-                                  libxcursor-dev libxinerama-dev libwayland-dev libxkbcommon-dev
+          sudo apt-get install -y gcc make libasound2-dev libx11-dev libxrandr-dev \
+                                  libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev \
+                                  libxinerama-dev libwayland-dev libxkbcommon-dev git
 
-      - name: Compile Project
+      - name: Compilar e Instalar Raylib (Source)
         run: |
-          chmod +x ./build.sh
-          ./build.sh -compile
+          # Baixa apenas o branch principal da versão 5.0 para ser rápido
+          git clone --depth 1 --branch 5.0 https://github.com/raysan5/raylib.git
+          cd raylib/src
+          make PLATFORM=PLATFORM_DESKTOP
+          sudo make install
+          # Isso instalará a biblioteca em /usr/local/lib, onde o GCC do Linux irá encontrá-la.
 
-      - name: Prepare AppDir for AppImage
+      - name: Compilar Projeto (Shell Script)
+        run: bash build.sh -compile
+        # Nota: Como o projeto tem um Makefile excelente,
+        # você também poderia usar apenas 'make compile' aqui.
+
+  # ==========================================
+  # JOB 2: BUILD NO WINDOWS
+  # ==========================================
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Verificar se libraylib.a existe
+        # Este passo ajuda a debugar. Se falhar aqui, o arquivo não subiu para o GitHub.
         run: |
-          # O build.sh gera o binário com o nome do diretório raiz
-          BIN_NAME=${PWD##*/}
+          if (-not (Test-Path "lib\libraylib.a")) {
+              Write-Error "O arquivo lib\libraylib.a não foi encontrado! Verifique seu .gitignore e faça o commit do arquivo."
+              exit 1
+          }
 
-          # Estrutura base de um AppImage
-          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
-
-          # Copia o executável e a pasta de recursos, se existir
-          cp $BIN_NAME AppDir/usr/bin/
-          if [ -d "resources" ]; then
-            cp -r resources AppDir/usr/bin/
-          fi
-
-          # Cria o atalho .desktop essencial para o sistema Linux reconhecer a aplicação
-          cat <<EOF > AppDir/usr/share/applications/$BIN_NAME.desktop
-          [Desktop Entry]
-          Name=$BIN_NAME
-          Exec=$BIN_NAME
-          Icon=$BIN_NAME
-          Type=Application
-          Categories=Game;
-          EOF
-
-          # Reaproveita um dos sprites como ícone da aplicação
-          cp resources/imagens/sprites/sonic.png AppDir/$BIN_NAME.png
-
-      - name: Build AppImage using linuxdeploy
-        run: |
-          BIN_NAME=${PWD##*/}
-
-          # Baixa o empacotador linuxdeploy
-          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          chmod +x linuxdeploy-x86_64.AppImage
-
-          # Executa o empacotamento. A flag --appimage-extract-and-run é necessária em runners CI
-          ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run \
-            --appdir AppDir \
-            --executable AppDir/usr/bin/$BIN_NAME \
-            --desktop-file AppDir/usr/share/applications/$BIN_NAME.desktop \
-            --icon-file AppDir/$BIN_NAME.png \
-            --output appimage
-
-      - name: Upload Linux Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Linux-AppImage-${{ env.BUILD_VERSION }}
-          path: "*.AppImage"
-          if-no-files-found: error
+      - name: Compilar Projeto (PowerShell)
+        run: .\build.ps1 -compile
