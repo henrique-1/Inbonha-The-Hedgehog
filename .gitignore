@@ -19,6 +19,7 @@
 # Libraries
 *.lib
 *.a
+!lib/libraylib.a
 *.la
 *.lo
 
