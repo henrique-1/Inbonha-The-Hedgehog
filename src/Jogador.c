@@ -89,6 +89,7 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
     configurarAnimacaoJogador( &novoJogador->animacaoAndandoRapido, 8, 40, 664, 324, (Rectangle){ 32, 20, 42, 76 } );
     configurarAnimacaoJogador( &novoJogador->animacaoCorrendo, 4, 20, 24, 397, (Rectangle){ 32, 20, 42, 76 } );
     configurarAnimacaoJogador( &novoJogador->animacaoPulando, 4, 40, 248, 397, (Rectangle){ 32, 46, 42, 50 } );
+    configurarAnimacaoJogador( &novoJogador->animacaoMorto, 1, 1000, 740, 750, (Rectangle){ 32, 20, 42, 76 } );
 
     novoJogador->animacaoPulandoRapido.quantidadeQuadros = 4;
     novoJogador->animacaoPulandoRapido.quadroAtual = 0;
@@ -139,6 +140,7 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
     novoJogador->animacoes[ESTADO_JOGADOR_PULANDO] = &novoJogador->animacaoPulando; quantidadeAnimacoes++;
     novoJogador->animacoes[ESTADO_JOGADOR_PULANDO_RAPIDO] = &novoJogador->animacaoPulandoRapido; quantidadeAnimacoes++;
     novoJogador->animacoes[ESTADO_JOGADOR_PULANDO_CORRENDO] = &novoJogador->animacaoPulandoCorrendo; quantidadeAnimacoes++;
+    novoJogador->animacoes[ESTADO_JOGADOR_MORTO] = &novoJogador->animacaoMorto; quantidadeAnimacoes++;
     novoJogador->quantidadeAnimacoes = quantidadeAnimacoes;
 
     return novoJogador;
@@ -161,6 +163,10 @@ void destruirJogador( Jogador *j ) {
  * @brief Lê a entrada do usuário e atualiza as velocidades do jogador.
  */
 void entradaJogador( Jogador *j, float delta ) {
+
+    if ( j->estado == ESTADO_JOGADOR_MORTO ) {
+        return; 
+    }
 
     EstadoJogador estadoAnterior = j->estado;
 
@@ -257,6 +263,18 @@ void entradaJogador( Jogador *j, float delta ) {
  */
 void atualizarJogador( Jogador *j, GameWorld *gw, float delta ) {
 
+    Animacao *animacaoAtual = getAnimacaoAtualJogador( j );
+    atualizarAnimacao( animacaoAtual, delta );
+
+    if ( j->estado == ESTADO_JOGADOR_MORTO ) {
+        j->vel.y += gw->gravidade * delta;
+        if ( j->vel.y > j->velMaxQueda ) {
+            j->vel.y = j->velMaxQueda;
+        }
+        j->ret.y += j->vel.y * delta;
+        return; // Retorna cedo para pular todas as resoluções de colisão abaixo
+    }
+
     if ( j->invulneravel ) {
 
         j->contadorTempoPiscaPisca += delta;
@@ -274,9 +292,6 @@ void atualizarJogador( Jogador *j, GameWorld *gw, float delta ) {
         }
 
     }
-
-    Animacao *animacaoAtual = getAnimacaoAtualJogador( j );
-    atualizarAnimacao( animacaoAtual, delta );
 
     // fase X: move horizontalmente e resolve colisões laterais
     j->ret.x += j->vel.x * delta;
@@ -310,6 +325,16 @@ void desenharJogador( Jogador *j ) {
         DrawRectangleLines( j->ret.x, j->ret.y, j->ret.width, j->ret.height, BLACK );
     }
 
+}
+
+void matarJogador( Jogador *j ) {
+    if ( j->estado != ESTADO_JOGADOR_MORTO ) {
+        j->estado = ESTADO_JOGADOR_MORTO;
+        j->vel.x = 0;                  // Zera inércia horizontal
+        j->vel.y = j->velPulo * 1.2f;  // Salto dramático para cima (levemente mais alto que o normal)
+        j->quantidadeVidas--;
+        PlaySound( rm.somMorte );
+    }
 }
 
 static void desenharQuadroAnimacaoJogador( Jogador *j, QuadroAnimacao *qa, Color tonalidade ) {
@@ -571,11 +596,10 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
                     if ( j->quantidadeAneis > 0 ) {
                         j->quantidadeAneis = 0;
                         PlaySound( rm.somHitComAnel );
+                        j->invulneravel = true; // Só ganha invulnerabilidade se sobreviveu
                     } else {
-                        j->quantidadeVidas--;
-                        PlaySound( rm.somMorte );
+                        matarJogador( j );
                     }
-                    j->invulneravel = true;
                 }
 
                 return; // um inimigo de cada vez!
@@ -618,11 +642,10 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
                     if ( j->quantidadeAneis > 0 ) {
                         j->quantidadeAneis = 0;
                         PlaySound( rm.somHitComAnel );
+                        j->invulneravel = true; // Só ganha invulnerabilidade se sobreviveu
                     } else {
-                        j->quantidadeVidas--;
-                        PlaySound( rm.somMorte );
+                        matarJogador( j );
                     }
-                    j->invulneravel = true;
                 }
 
                 return; // um inimigo de cada vez!

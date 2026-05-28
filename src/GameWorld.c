@@ -28,7 +28,7 @@ static void desenharFundo( GameWorld *gw );
 static void atualizarCamera( GameWorld *gw );
 
 static void inicializar( GameWorld *gw );
-static void reiniciar( GameWorld *gw );
+static void reiniciar( GameWorld *gw, bool gameOver );
 
 static void desenharHUD( GameWorld *gw );
 
@@ -64,7 +64,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     }
 
     if ( IsKeyPressed( KEY_R ) ) {
-        reiniciar( gw );
+        reiniciar( gw, false ); // O botão R apenas reinicia o mapa mantendo os status
         return;
     }
 
@@ -76,6 +76,16 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     atualizarJogador( j, gw, delta );
     atualizarCamera( gw );
 
+    float alturaMapa = (float) calcularAlturaMapa( gw->mapa );
+    if ( j->ret.y > alturaMapa + 100.0f ) {
+        if ( j->quantidadeVidas >= 0 ) {
+            // Perdeu uma vida, mas ainda tem saldo. Recarrega o mapa preservando as vidas.
+            reiniciar( gw, false ); 
+        } else {
+            // Vidas caíram abaixo de 0 (Game Over). Reseta a fase inteira (vidas voltam pra 3).
+            reiniciar( gw, true ); 
+        }
+    }
 }
 
 /**
@@ -262,7 +272,11 @@ static void inicializar( GameWorld *gw ) {
 
 }
 
-static void reiniciar( GameWorld *gw ) {
+static void reiniciar( GameWorld *gw, bool gameOver ) {
+
+    // 1. Salva o estado atual (vidas e pontos) antes de destruir o objeto
+    int vidasRestantes = gw->jogador->quantidadeVidas;
+    int pontuacaoAtual = gw->jogador->pontuacao;
 
     destruirMapa( gw->mapa );
     destruirJogador( gw->jogador );
@@ -271,6 +285,13 @@ static void reiniciar( GameWorld *gw ) {
         StopMusicStream( rm.musicaFase01 );
     }
 
+    // 2. Cria um novo mapa e um novo jogador (que virá com 3 vidas e 0 pontos por padrão)
     inicializar( gw );
+
+    // 3. Se NÃO for Game Over, injetamos as vidas e os pontos salvos de volta no novo jogador
+    if ( !gameOver ) {
+        gw->jogador->quantidadeVidas = vidasRestantes;
+        gw->jogador->pontuacao = pontuacaoAtual;
+    }
 
 }

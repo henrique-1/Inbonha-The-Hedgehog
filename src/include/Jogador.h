@@ -33,3 +33,8 @@ void atualizarJogador( Jogador *j, GameWorld *gw, float delta );
  * @brief Desenha o jogador.
  */
 void desenharJogador( Jogador *j );
+
+/**
+ * @brief Altera o estado do jogador para morto e aplica o impulso de queda livre.
+ */
+void matarJogador( Jogador *j );
