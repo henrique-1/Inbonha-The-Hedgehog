@@ -68,6 +68,10 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
     novoJogador->quantidadeAneis = 0;
     novoJogador->quantidadeVidas = 3;
 
+    // Inicialização do controle de tédio
+    novoJogador->contadorTempoTedio = 0.0f;
+    novoJogador->tempoParaTedio = 4.0f; // Tempo em segundos parado para ativar o tédio
+
     novoJogador->pontuacao = 0;
     novoJogador->invulneravel = false;
     novoJogador->tempoInvulnerabilidade = 3.0f;
@@ -90,6 +94,7 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
     configurarAnimacaoJogador( &novoJogador->animacaoCorrendo, 4, 20, 24, 397, (Rectangle){ 32, 20, 42, 76 } );
     configurarAnimacaoJogador( &novoJogador->animacaoPulando, 4, 40, 248, 397, (Rectangle){ 32, 46, 42, 50 } );
     configurarAnimacaoJogador( &novoJogador->animacaoMorto, 1, 1000, 740, 750, (Rectangle){ 32, 20, 42, 76 } );
+    configurarAnimacaoJogador( &novoJogador->animacaoTedio, 9, 120, 24, 251, (Rectangle){ 32, 20, 42, 76 } );
 
     novoJogador->animacaoPulandoRapido.quantidadeQuadros = 4;
     novoJogador->animacaoPulandoRapido.quadroAtual = 0;
@@ -141,6 +146,7 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
     novoJogador->animacoes[ESTADO_JOGADOR_PULANDO_RAPIDO] = &novoJogador->animacaoPulandoRapido; quantidadeAnimacoes++;
     novoJogador->animacoes[ESTADO_JOGADOR_PULANDO_CORRENDO] = &novoJogador->animacaoPulandoCorrendo; quantidadeAnimacoes++;
     novoJogador->animacoes[ESTADO_JOGADOR_MORTO] = &novoJogador->animacaoMorto; quantidadeAnimacoes++;
+    novoJogador->animacoes[ESTADO_JOGADOR_TEDIO] = &novoJogador->animacaoTedio; quantidadeAnimacoes++;
     novoJogador->quantidadeAnimacoes = quantidadeAnimacoes;
 
     return novoJogador;
@@ -173,6 +179,11 @@ void entradaJogador( Jogador *j, float delta ) {
     bool direitaDown  = IsKeyDown( KEY_RIGHT )     || ( IsGamepadAvailable( 0 ) && IsGamepadButtonDown( 0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT ) );
     bool esquerdaDown = IsKeyDown( KEY_LEFT )      || ( IsGamepadAvailable( 0 ) && IsGamepadButtonDown( 0, GAMEPAD_BUTTON_LEFT_FACE_LEFT ) );
     bool puloPressed  = IsKeyPressed( KEY_SPACE )  || ( IsGamepadAvailable( 0 ) && IsGamepadButtonDown( 0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN ) );
+
+    // Se houver qualquer comando, interrompe o tédio imediatamente
+    if ( direitaDown || esquerdaDown || puloPressed ) {
+        j->contadorTempoTedio = 0.0f;
+    }
 
     if ( direitaDown ) {
         if ( j->vel.x < 0 ) {
@@ -234,7 +245,9 @@ void entradaJogador( Jogador *j, float delta ) {
             j->estado = ESTADO_JOGADOR_PULANDO_CORRENDO;
         }
     } else if ( absVelX < 1.0f ) {
-        j->estado = ESTADO_JOGADOR_PARADO;
+        if ( j->estado != ESTADO_JOGADOR_TEDIO ) {
+            j->estado = ESTADO_JOGADOR_PARADO;
+        }
     } else if ( absVelX <= j->velAndando ) {
         j->estado = ESTADO_JOGADOR_ANDANDO;
     } else if ( absVelX <= j->velAndandoRapido ) {
@@ -273,6 +286,25 @@ void atualizarJogador( Jogador *j, GameWorld *gw, float delta ) {
         }
         j->ret.y += j->vel.y * delta;
         return; // Retorna cedo para pular todas as resoluções de colisão abaixo
+    }
+
+    // 1. Controle do temporizador de inatividade
+    if ( j->estado == ESTADO_JOGADOR_PARADO ) {
+        j->contadorTempoTedio += delta;
+        if ( j->contadorTempoTedio >= j->tempoParaTedio ) {
+            j->estado = ESTADO_JOGADOR_TEDIO;
+            reiniciarAnimacao( &j->animacaoTedio );
+        }
+    }
+
+    // 2. Regra de Loop customizada para o Tédio
+    if ( j->estado == ESTADO_JOGADOR_TEDIO ) {
+        // A 8ª imagem é o índice 7. Se avançar para o índice 8,
+        // significa que o tempo da 8ª imagem expirou, retornando para a 4ª imagem (índice 3).
+        if ( j->animacaoTedio.quadroAtual == 8 ) {
+            j->animacaoTedio.quadroAtual = 3;
+            j->animacaoTedio.contadorTempoQuadro = 0;
+        }
     }
 
     if ( j->invulneravel ) {
