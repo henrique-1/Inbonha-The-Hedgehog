@@ -1,62 +1,130 @@
 name: Build Inbonha The Hedgehog
 
+# 1. Roda somente em push na branch main
 on:
   push:
-    branches: ["main", "master"]
-  pull_request:
-    branches: ["main", "master"]
+    branches:
+      - main
 
 jobs:
   # ==========================================
-  # JOB 1: BUILD NO LINUX
+  # JOB 1: BUILD LINUX (.AppImage)
   # ==========================================
   build-linux:
-    name: Build on Ubuntu
+    name: Build Linux AppImage
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
+      # 2. Gera a versão incremental partindo do 6 (run_number + 5)
+      - name: Calcular Versão Incremental
+        run: echo "VERSION=$((GITHUB_RUN_NUMBER + 5))" >> $GITHUB_ENV
+
       - name: Instalar dependências gráficas
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc make libasound2-dev libx11-dev libxrandr-dev \
                                   libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev \
-                                  libxinerama-dev libwayland-dev libxkbcommon-dev git
+                                  libxinerama-dev libwayland-dev libxkbcommon-dev git wget
 
-      - name: Compilar e Instalar Raylib (Source)
+      - name: Compilar Raylib (Source)
         run: |
-          # Baixa apenas o branch principal da versão 5.0 para ser rápido
           git clone --depth 1 --branch 5.0 https://github.com/raysan5/raylib.git
           cd raylib/src
           make PLATFORM=PLATFORM_DESKTOP
           sudo make install
-          # Isso instalará a biblioteca em /usr/local/lib, onde o GCC do Linux irá encontrá-la.
 
       - name: Compilar Projeto (Shell Script)
         run: bash build.sh -compile
-        # Nota: Como o projeto tem um Makefile excelente,
-        # você também poderia usar apenas 'make compile' aqui.
+
+      - name: Construir e Empacotar .AppImage
+        run: |
+          # Baixar a ferramenta oficial de empacotamento AppImage
+          wget -nc https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+
+          # Criar estrutura de diretórios obrigatória (AppDir)
+          mkdir -p AppDir/usr/bin
+
+          # Copiar o executável do jogo e a pasta de recursos
+          cp build/Inbonha-The-Hedgehog AppDir/usr/bin/
+          if [ -d "resources" ]; then
+            cp -r resources AppDir/usr/bin/
+          fi
+
+          # Criar script de inicialização para garantir o path correto dos recursos
+          cat << 'EOF' > AppDir/AppRun
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          cd "$HERE/usr/bin"
+          exec ./Inbonha-The-Hedgehog "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+          # Copiar uma imagem para servir de ícone do AppImage
+          cp resources/imagens/sprites/sonic.png AppDir/inbonha.png
+
+          # Criar o arquivo Desktop necessário para o ambiente Linux
+          cat << 'EOF' > AppDir/inbonha.desktop
+          [Desktop Entry]
+          Type=Application
+          Name=Inbonha The Hedgehog
+          Exec=Inbonha-The-Hedgehog
+          Icon=inbonha
+          Categories=Game;
+          EOF
+
+          # Executar o appimagetool para extrair e gerar o .AppImage final
+          ./appimagetool-x86_64.AppImage --appimage-extract-and-run AppDir Inbonha-The-Hedgehog-v${VERSION}-Linux.AppImage
+
+      # 3. Exportar o artefato do AppImage pronto para uso
+      - name: Upload Artefato (Linux AppImage)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Inbonha-The-Hedgehog-v${{ env.VERSION }}-Linux
+          path: Inbonha-The-Hedgehog-v${{ env.VERSION }}-Linux.AppImage
 
   # ==========================================
-  # JOB 2: BUILD NO WINDOWS
+  # JOB 2: BUILD WINDOWS (.exe)
   # ==========================================
   build-windows:
-    name: Build on Windows
+    name: Build Windows Executable
     runs-on: windows-latest
 
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
+      # 2. Gera a versão incremental partindo do 6 (run_number + 5) via PowerShell
+      - name: Calcular Versão Incremental
+        run: |
+          $ver = ${{ github.run_number }} + 5
+          echo "VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Verificar se libraylib.a existe
-        # Este passo ajuda a debugar. Se falhar aqui, o arquivo não subiu para o GitHub.
         run: |
           if (-not (Test-Path "lib\libraylib.a")) {
-              Write-Error "O arquivo lib\libraylib.a não foi encontrado! Verifique seu .gitignore e faça o commit do arquivo."
+              Write-Error "O arquivo lib\libraylib.a não foi encontrado!"
               exit 1
           }
 
       - name: Compilar Projeto (PowerShell)
         run: .\build.ps1 -compile
+
+      - name: Preparar Pasta de Release
+        run: |
+          # Criamos uma pasta agrupando o executável e as pastas de recursos para não quebrar caminhos relativos
+          mkdir release_windows
+          Copy-Item -Path "build\Inbonha-The-Hedgehog.exe" -Destination "release_windows\"
+          if (Test-Path "resources") {
+              Copy-Item -Path "resources" -Destination "release_windows\resources" -Recurse
+          }
+
+      # 3. Exportar a pasta contendo o .exe e os recursos
+      - name: Upload Artefato (Windows EXE)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Inbonha-The-Hedgehog-v${{ env.VERSION }}-Windows
+          path: release_windows\*
