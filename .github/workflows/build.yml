@@ -1,10 +1,13 @@
 name: Build Inbonha The Hedgehog
 
-# 1. Roda somente em push na branch main
 on:
   push:
     branches:
       - main
+
+# Permissão necessária para o robô do GitHub Actions criar a Release
+permissions:
+  contents: write
 
 jobs:
   # ==========================================
@@ -14,13 +17,20 @@ jobs:
     name: Build Linux AppImage
     runs-on: ubuntu-latest
 
+    # Exporta o número da versão gerada para ser usado no Job de Release
+    outputs:
+      version: ${{ steps.calc_version.outputs.version }}
+
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
-      # 2. Gera a versão incremental partindo do 6 (run_number + 5)
       - name: Calcular Versão Incremental
-        run: echo "VERSION=$((GITHUB_RUN_NUMBER + 5))" >> $GITHUB_ENV
+        id: calc_version
+        run: |
+          VER=$((GITHUB_RUN_NUMBER + 5))
+          echo "VERSION=$VER" >> $GITHUB_ENV
+          echo "version=$VER" >> $GITHUB_OUTPUT
 
       - name: Instalar dependências gráficas
         run: |
@@ -41,20 +51,16 @@ jobs:
 
       - name: Construir e Empacotar .AppImage
         run: |
-          # Baixar a ferramenta oficial de empacotamento AppImage
           wget -nc https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
 
-          # Criar estrutura de diretórios obrigatória (AppDir)
           mkdir -p AppDir/usr/bin
 
-          # Copiar o executável do jogo e a pasta de recursos
-          cp build/Inbonha-The-Hedgehog AppDir/usr/bin/
+          cp Inbonha-The-Hedgehog AppDir/usr/bin/
           if [ -d "resources" ]; then
             cp -r resources AppDir/usr/bin/
           fi
 
-          # Criar script de inicialização para garantir o path correto dos recursos
           cat << 'EOF' > AppDir/AppRun
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "${0}")")"
@@ -63,10 +69,8 @@ jobs:
           EOF
           chmod +x AppDir/AppRun
 
-          # Copiar uma imagem para servir de ícone do AppImage
           cp resources/imagens/sprites/sonic.png AppDir/inbonha.png
 
-          # Criar o arquivo Desktop necessário para o ambiente Linux
           cat << 'EOF' > AppDir/inbonha.desktop
           [Desktop Entry]
           Type=Application
@@ -76,14 +80,12 @@ jobs:
           Categories=Game;
           EOF
 
-          # Executar o appimagetool para extrair e gerar o .AppImage final
           ./appimagetool-x86_64.AppImage --appimage-extract-and-run AppDir Inbonha-The-Hedgehog-v${VERSION}-Linux.AppImage
 
-      # 3. Exportar o artefato do AppImage pronto para uso
-      - name: Upload Artefato (Linux AppImage)
+      - name: Upload Artefato Temporário
         uses: actions/upload-artifact@v4
         with:
-          name: Inbonha-The-Hedgehog-v${{ env.VERSION }}-Linux
+          name: linux-appimage
           path: Inbonha-The-Hedgehog-v${{ env.VERSION }}-Linux.AppImage
 
   # ==========================================
@@ -92,12 +94,10 @@ jobs:
   build-windows:
     name: Build Windows Executable
     runs-on: windows-latest
-
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
-      # 2. Gera a versão incremental partindo do 6 (run_number + 5) via PowerShell
       - name: Calcular Versão Incremental
         run: |
           $ver = ${{ github.run_number }} + 5
@@ -113,21 +113,41 @@ jobs:
       - name: Compilar Projeto (PowerShell)
         run: .\build.ps1 -compile
 
-      - name: Preparar Pasta de Release
+      - name: Preparar Pasta e Zipar
         run: |
-          # Criamos uma pasta agrupando o executável e as pastas de recursos
           mkdir release_windows
-
-          # CORREÇÃO: Pegando o .exe direto da raiz do repositório
           Copy-Item -Path "Inbonha-The-Hedgehog.exe" -Destination "release_windows\"
-
           if (Test-Path "resources") {
               Copy-Item -Path "resources" -Destination "release_windows\resources" -Recurse
           }
+          # Nós compactamos manualmente o ZIP no Windows para subir pronto para a Release
+          Compress-Archive -Path "release_windows\*" -DestinationPath "Inbonha-The-Hedgehog-v${env:VERSION}-Windows.zip"
 
-      # 3. Exportar a pasta contendo o .exe e os recursos
-      - name: Upload Artefato (Windows EXE)
+      - name: Upload Artefato Temporário
         uses: actions/upload-artifact@v4
         with:
-          name: Inbonha-The-Hedgehog-v${{ env.VERSION }}-Windows
-          path: release_windows\*
+          name: windows-zip
+          path: Inbonha-The-Hedgehog-v${{ env.VERSION }}-Windows.zip
+
+  # ==========================================
+  # JOB 3: PUBLICAR RELEASE
+  # ==========================================
+  publish-release:
+    name: Publicar no GitHub Releases
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download dos Artefatos
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Criar GitHub Release Automática
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build-linux.outputs.version }}
+          name: "Inbonha The Hedgehog v${{ needs.build-linux.outputs.version }}"
+          generate_release_notes: true
+          files: |
+            dist/linux-appimage/*.AppImage
+            dist/windows-zip/*.zip
