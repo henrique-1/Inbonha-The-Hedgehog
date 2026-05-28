@@ -115,9 +115,12 @@ jobs:
 
       - name: Preparar Pasta de Release
         run: |
-          # Criamos uma pasta agrupando o executável e as pastas de recursos para não quebrar caminhos relativos
+          # Criamos uma pasta agrupando o executável e as pastas de recursos
           mkdir release_windows
-          Copy-Item -Path "build\Inbonha-The-Hedgehog.exe" -Destination "release_windows\"
+
+          # CORREÇÃO: Pegando o .exe direto da raiz do repositório
+          Copy-Item -Path "Inbonha-The-Hedgehog.exe" -Destination "release_windows\"
+
           if (Test-Path "resources") {
               Copy-Item -Path "resources" -Destination "release_windows\resources" -Recurse
           }
