@@ -97,6 +97,10 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
     configurarAnimacaoJogador( &novoJogador->animacaoTedio, 9, 120, 24, 251, (Rectangle){ 32, 20, 42, 76 } );
     configurarAnimacaoJogador( &novoJogador->animacaoAcordando, 1, 150, 440, 251, (Rectangle){ 32, 20, 42, 76 } );
     novoJogador->animacaoAcordando.executarUmaVez = true;
+    configurarAnimacaoJogador( &novoJogador->animacaoOlhandoCima, 2, 120, 708, 251, (Rectangle){ 32, 20, 42, 76 } );
+    novoJogador->animacaoOlhandoCima.pararNoUltimoQuadro = true;
+    configurarAnimacaoJogador( &novoJogador->animacaoAgachado, 2, 120, 826, 251, (Rectangle){ 32, 20, 42, 76 } );
+    novoJogador->animacaoAgachado.pararNoUltimoQuadro = true;
 
     novoJogador->animacaoPulandoRapido.quantidadeQuadros = 4;
     novoJogador->animacaoPulandoRapido.quadroAtual = 0;
@@ -150,6 +154,8 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
     novoJogador->animacoes[ESTADO_JOGADOR_MORTO] = &novoJogador->animacaoMorto; quantidadeAnimacoes++;
     novoJogador->animacoes[ESTADO_JOGADOR_TEDIO] = &novoJogador->animacaoTedio; quantidadeAnimacoes++;
     novoJogador->animacoes[ESTADO_JOGADOR_ACORDANDO] = &novoJogador->animacaoAcordando; quantidadeAnimacoes++;
+    novoJogador->animacoes[ESTADO_JOGADOR_OLHANDO_CIMA] = &novoJogador->animacaoOlhandoCima; quantidadeAnimacoes++;
+    novoJogador->animacoes[ESTADO_JOGADOR_AGACHADO] = &novoJogador->animacaoAgachado; quantidadeAnimacoes++;
     novoJogador->quantidadeAnimacoes = quantidadeAnimacoes;
 
     return novoJogador;
@@ -182,10 +188,12 @@ void entradaJogador( Jogador *j, float delta ) {
     bool direitaDown  = IsKeyDown( KEY_RIGHT )     || ( IsGamepadAvailable( 0 ) && IsGamepadButtonDown( 0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT ) );
     bool esquerdaDown = IsKeyDown( KEY_LEFT )      || ( IsGamepadAvailable( 0 ) && IsGamepadButtonDown( 0, GAMEPAD_BUTTON_LEFT_FACE_LEFT ) );
     bool puloPressed  = IsKeyPressed( KEY_SPACE )  || ( IsGamepadAvailable( 0 ) && IsGamepadButtonDown( 0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN ) );
+    bool cimaDown     = IsKeyDown( KEY_UP )        || ( IsGamepadAvailable( 0 ) && IsGamepadButtonDown( 0, GAMEPAD_BUTTON_LEFT_FACE_UP ) );
+    bool baixoDown    = IsKeyDown( KEY_DOWN )      || ( IsGamepadAvailable( 0 ) && IsGamepadButtonDown( 0, GAMEPAD_BUTTON_LEFT_FACE_DOWN ) );
 
     // 1. Intercepta a saída do tédio
     if ( j->estado == ESTADO_JOGADOR_TEDIO ) {
-        if ( direitaDown || esquerdaDown || puloPressed ) {
+        if ( direitaDown || esquerdaDown || puloPressed || cimaDown || baixoDown ) {
             j->estado = ESTADO_JOGADOR_ACORDANDO;
             reiniciarAnimacao( &j->animacaoAcordando );
             
@@ -203,7 +211,7 @@ void entradaJogador( Jogador *j, float delta ) {
     }
 
     // 3. Se não estiver em tédio ou acordando, reseta o timer normalmente
-    if ( direitaDown || esquerdaDown || puloPressed ) {
+    if ( direitaDown || esquerdaDown || puloPressed || cimaDown || baixoDown ) {
         j->contadorTempoTedio = 0.0f;
     }
 
@@ -266,9 +274,23 @@ void entradaJogador( Jogador *j, float delta ) {
         } else {
             j->estado = ESTADO_JOGADOR_PULANDO_CORRENDO;
         }
-    } else if ( absVelX < 1.0f ) {
-        if ( j->estado != ESTADO_JOGADOR_TEDIO ) {
-            j->estado = ESTADO_JOGADOR_PARADO;
+    } else if ( absVelX < 1.0f && !direitaDown && !esquerdaDown ) {
+        // Personagem está no chão e não está tentando andar para os lados
+        if ( cimaDown ) {
+            if ( j->estado != ESTADO_JOGADOR_OLHANDO_CIMA ) {
+                j->estado = ESTADO_JOGADOR_OLHANDO_CIMA;
+                reiniciarAnimacao( &j->animacaoOlhandoCima );
+            }
+        } else if ( baixoDown ) {
+            if ( j->estado != ESTADO_JOGADOR_AGACHADO ) {
+                j->estado = ESTADO_JOGADOR_AGACHADO;
+                reiniciarAnimacao( &j->animacaoAgachado );
+            }
+        } else {
+            // Se nenhuma tecla está pressionada e a velocidade é zero, volta a ficar parado
+            if ( j->estado != ESTADO_JOGADOR_TEDIO ) {
+                j->estado = ESTADO_JOGADOR_PARADO;
+            }
         }
     } else if ( absVelX <= j->velAndando ) {
         j->estado = ESTADO_JOGADOR_ANDANDO;
