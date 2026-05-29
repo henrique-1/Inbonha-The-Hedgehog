@@ -95,6 +95,8 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
     configurarAnimacaoJogador( &novoJogador->animacaoPulando, 4, 40, 248, 397, (Rectangle){ 32, 46, 42, 50 } );
     configurarAnimacaoJogador( &novoJogador->animacaoMorto, 1, 1000, 740, 750, (Rectangle){ 32, 20, 42, 76 } );
     configurarAnimacaoJogador( &novoJogador->animacaoTedio, 9, 120, 24, 251, (Rectangle){ 32, 20, 42, 76 } );
+    configurarAnimacaoJogador( &novoJogador->animacaoAcordando, 1, 150, 440, 251, (Rectangle){ 32, 20, 42, 76 } );
+    novoJogador->animacaoAcordando.executarUmaVez = true;
 
     novoJogador->animacaoPulandoRapido.quantidadeQuadros = 4;
     novoJogador->animacaoPulandoRapido.quadroAtual = 0;
@@ -147,6 +149,7 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
     novoJogador->animacoes[ESTADO_JOGADOR_PULANDO_CORRENDO] = &novoJogador->animacaoPulandoCorrendo; quantidadeAnimacoes++;
     novoJogador->animacoes[ESTADO_JOGADOR_MORTO] = &novoJogador->animacaoMorto; quantidadeAnimacoes++;
     novoJogador->animacoes[ESTADO_JOGADOR_TEDIO] = &novoJogador->animacaoTedio; quantidadeAnimacoes++;
+    novoJogador->animacoes[ESTADO_JOGADOR_ACORDANDO] = &novoJogador->animacaoAcordando; quantidadeAnimacoes++;
     novoJogador->quantidadeAnimacoes = quantidadeAnimacoes;
 
     return novoJogador;
@@ -180,7 +183,26 @@ void entradaJogador( Jogador *j, float delta ) {
     bool esquerdaDown = IsKeyDown( KEY_LEFT )      || ( IsGamepadAvailable( 0 ) && IsGamepadButtonDown( 0, GAMEPAD_BUTTON_LEFT_FACE_LEFT ) );
     bool puloPressed  = IsKeyPressed( KEY_SPACE )  || ( IsGamepadAvailable( 0 ) && IsGamepadButtonDown( 0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN ) );
 
-    // Se houver qualquer comando, interrompe o tédio imediatamente
+    // 1. Intercepta a saída do tédio
+    if ( j->estado == ESTADO_JOGADOR_TEDIO ) {
+        if ( direitaDown || esquerdaDown || puloPressed ) {
+            j->estado = ESTADO_JOGADOR_ACORDANDO;
+            reiniciarAnimacao( &j->animacaoAcordando );
+            
+            // Já vira o personagem visualmente para o lado que o jogador quer ir
+            if ( direitaDown ) j->olhandoParaDireita = true;
+            if ( esquerdaDown ) j->olhandoParaDireita = false;
+            
+            return; // Bloqueia a movimentação neste exato frame
+        }
+    }
+
+    // 2. Aguarda a animação de transição finalizar
+    if ( j->estado == ESTADO_JOGADOR_ACORDANDO ) {
+        return; 
+    }
+
+    // 3. Se não estiver em tédio ou acordando, reseta o timer normalmente
     if ( direitaDown || esquerdaDown || puloPressed ) {
         j->contadorTempoTedio = 0.0f;
     }
@@ -286,6 +308,14 @@ void atualizarJogador( Jogador *j, GameWorld *gw, float delta ) {
         }
         j->ret.y += j->vel.y * delta;
         return; // Retorna cedo para pular todas as resoluções de colisão abaixo
+    }
+
+    // Verifica se a animação de susto/despertar terminou
+    if ( j->estado == ESTADO_JOGADOR_ACORDANDO ) {
+        if ( j->animacaoAcordando.finalizada ) {
+            j->estado = ESTADO_JOGADOR_PARADO;
+            j->contadorTempoTedio = 0.0f;
+        }
     }
 
     // 1. Controle do temporizador de inatividade

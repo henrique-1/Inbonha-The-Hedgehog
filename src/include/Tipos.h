@@ -24,6 +24,7 @@ typedef enum EstadoJogador {
     ESTADO_JOGADOR_PULANDO_CORRENDO,
     ESTADO_JOGADOR_MORTO,
     ESTADO_JOGADOR_TEDIO,
+    ESTADO_JOGADOR_ACORDANDO,
 } EstadoJogador;
 
 /**
@@ -156,6 +157,7 @@ typedef struct Jogador {
     Animacao animacaoPulandoCorrendo;
     Animacao animacaoMorto;
     Animacao animacaoTedio;
+    Animacao animacaoAcordando;
 
     // Controle de tempo para entrar em tédio
     float contadorTempoTedio;
