@@ -385,7 +385,7 @@ endif
 # Without this declaration, if a file named "clean" or "run" existed in the
 # directory, Make would consider the target already up to date and execute
 # nothing. With .PHONY, Make always runs the recipes for these targets.
-.PHONY: all compile run clean cleanAndCompile
+.PHONY: all compile run clean cleanAndCompile watch
 
 # Default target (executed with plain `make`): compile then run.
 all: compile run
@@ -461,6 +461,14 @@ clean:
 run:
 	$(RUN)
 
+
+# -----------------------------------------------------------------------------
+# watch TARGET: Monitora os arquivos fonte e faz o Live Reload da aplicação
+# Requer a instalação do nodemon.
+# -----------------------------------------------------------------------------
+watch:
+	@echo "Iniciando modo watch... Pressione Ctrl+C para sair."
+	nodemon --watch $(SRC_DIRS) --ext c,cpp,h --exec "make cleanAndCompile && make run"
 
 # -----------------------------------------------------------------------------
 # DEPENDENCY FILE INCLUSION (.d files)
