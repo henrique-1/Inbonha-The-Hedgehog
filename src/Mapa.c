@@ -20,6 +20,8 @@
 #include "Item.h"
 #include "ItemAnel.h"
 #include "ItemAnelAzul.h"
+#include "ItemEstrelinha.h"
+#include "ItemEscudo.h"
 #include "Obstaculo.h"
 #include "Tipos.h"
 #include "ResourceManager.h"
@@ -145,6 +147,36 @@ Mapa *carregarMapa( const char *caminhoArquivo ) {
                             el->objeto = item;
                             el->tipo = TIPO_ELEMENTO_MAPA_ITEM;
 
+                            break;
+
+                        case 'e':
+                            item = criarItem( TIPO_ITEM_ESTRELINHA );
+                            item->objeto = criarItemEstrelinha( 
+                                (Rectangle) { 
+                                    .x = novoMapa->dimensaoPadraoElementos * colunaAtual + 8, 
+                                    .y = novoMapa->dimensaoPadraoElementos * linhaAtual + 5, 
+                                    .width = 32, 
+                                    .height = 32
+                                },
+                                WHITE
+                            );
+                            el->objeto = item;
+                            el->tipo = TIPO_ELEMENTO_MAPA_ITEM;
+                            break;
+
+                        case 's':
+                            item = criarItem( TIPO_ITEM_ESCUDO );
+                            item->objeto = criarItemEscudo( 
+                                (Rectangle) { 
+                                    .x = novoMapa->dimensaoPadraoElementos * colunaAtual + 8, 
+                                    .y = novoMapa->dimensaoPadraoElementos * linhaAtual + 5, 
+                                    .width = 32, 
+                                    .height = 32
+                                },
+                                WHITE
+                            );
+                            el->objeto = item;
+                            el->tipo = TIPO_ELEMENTO_MAPA_ITEM;
                             break;
 
                         default:

@@ -20,6 +20,8 @@
 #include "Item.h"
 #include "ItemAnel.h"
 #include "ItemAnelAzul.h"
+#include "ItemEstrelinha.h"
+#include "ItemEscudo.h"
 #include "Macros.h"
 #include "Jogador.h"
 #include "ResourceManager.h"
@@ -88,6 +90,9 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
     novoJogador->estado = ESTADO_JOGADOR_PARADO;
     novoJogador->olhandoParaDireita = true;
 
+    novoJogador->temEscudo = false;
+    novoJogador->temEstrela = false;
+
     int quantidadeAnimacoes = 0;
 
     configurarAnimacaoJogador( &novoJogador->animacaoParado, 1, 1000, 24, 251, (Rectangle){ 32, 20, 42, 76 } );
@@ -146,6 +151,26 @@ Jogador *criarJogador( float x, float y, float w, float h ) {
         }
     );
 
+    novoJogador->animacaoEscudo.quantidadeQuadros = 3; // Ex: 4 quadros de animação
+    novoJogador->animacaoEscudo.quadroAtual = 0;
+    novoJogador->animacaoEscudo.contadorTempoQuadro = 0.0f;
+    novoJogador->animacaoEscudo.pararNoUltimoQuadro = false;
+    novoJogador->animacaoEscudo.executarUmaVez = false;
+    novoJogador->animacaoEscudo.finalizada = false;
+    criarQuadrosAnimacao( &novoJogador->animacaoEscudo, novoJogador->animacaoEscudo.quantidadeQuadros );
+    inicializarQuadrosAnimacao( novoJogador->animacaoEscudo.quadros, novoJogador->animacaoEscudo.quantidadeQuadros, 100, 
+        1, 1, 48, 48, 1, false, (Rectangle){0} ); // <-- AJUSTE A LARGURA (48) E ALTURA (48) DO SEU ESCUDO
+
+    novoJogador->animacaoEstrela.quantidadeQuadros = 4;
+    novoJogador->animacaoEstrela.quadroAtual = 0;
+    novoJogador->animacaoEstrela.contadorTempoQuadro = 0.0f;
+    novoJogador->animacaoEstrela.pararNoUltimoQuadro = false;
+    novoJogador->animacaoEstrela.executarUmaVez = false;
+    novoJogador->animacaoEstrela.finalizada = false;
+    criarQuadrosAnimacao( &novoJogador->animacaoEstrela, novoJogador->animacaoEstrela.quantidadeQuadros );
+    inicializarQuadrosAnimacao( novoJogador->animacaoEstrela.quadros, novoJogador->animacaoEstrela.quantidadeQuadros, 100, 
+        1, 1, 48, 48, 1, false, (Rectangle){0} ); // <-- AJUSTE A LARGURA (48) E ALTURA (48) DAS FAÍSCAS
+
     novoJogador->animacoes[ESTADO_JOGADOR_PARADO] = &novoJogador->animacaoParado; quantidadeAnimacoes++;
     novoJogador->animacoes[ESTADO_JOGADOR_ANDANDO] = &novoJogador->animacaoAndando; quantidadeAnimacoes++;
     novoJogador->animacoes[ESTADO_JOGADOR_ANDANDO_RAPIDO] = &novoJogador->animacaoAndandoRapido; quantidadeAnimacoes++;
@@ -172,6 +197,8 @@ void destruirJogador( Jogador *j ) {
         for ( int i = 0; i < j->quantidadeAnimacoes; i++ ) {
             destruirQuadrosAnimacao( j->animacoes[i] );
         }
+        destruirQuadrosAnimacao( &j->animacaoEscudo ); // <-- ADICIONADO
+        destruirQuadrosAnimacao( &j->animacaoEstrela ); // <-- ADICIONADO
         free( j );
     }
 }
@@ -373,11 +400,15 @@ void atualizarJogador( Jogador *j, GameWorld *gw, float delta ) {
         if ( j->contadorTempoInvulnerabilidade >= j->tempoInvulnerabilidade ) {
             j->contadorTempoInvulnerabilidade = 0.0f;
             j->invulneravel = false;
+            j->temEstrela = false; // <-- DESLIGA A ANIMAÇÃO DA ESTRELA
             j->contadorTempoPiscaPisca = 0.0f;
             j->piscaPisca = false;
         }
 
     }
+
+    if ( j->temEscudo ) atualizarAnimacao( &j->animacaoEscudo, delta );
+    if ( j->temEstrela ) atualizarAnimacao( &j->animacaoEstrela, delta );
 
     // fase X: move horizontalmente e resolve colisões laterais
     j->ret.x += j->vel.x * delta;
@@ -404,6 +435,32 @@ void desenharJogador( Jogador *j ) {
     if ( !j->piscaPisca ) {
         QuadroAnimacao *qa = getQuadroAnimacaoAtualJogador( j );
         desenharQuadroAnimacaoJogador( j, qa, WHITE );
+    }
+
+    if ( j->temEscudo && j->estado != ESTADO_JOGADOR_MORTO ) {
+        QuadroAnimacao *qaEscudo = getQuadroAtualAnimacao( &j->animacaoEscudo );
+        DrawTexturePro( 
+            rm.texturaShield, qaEscudo->fonte,
+            (Rectangle) { 
+                j->ret.x + j->ret.width / 2 - qaEscudo->fonte.width / 2, // Centraliza X
+                j->ret.y + j->ret.height / 2 - qaEscudo->fonte.height / 2, // Centraliza Y
+                qaEscudo->fonte.width, qaEscudo->fonte.height 
+            },
+            (Vector2) { 0 }, 0.0f, WHITE 
+        );
+    }
+
+    if ( j->temEstrela && j->estado != ESTADO_JOGADOR_MORTO ) {
+        QuadroAnimacao *qaEstrela = getQuadroAtualAnimacao( &j->animacaoEstrela );
+        DrawTexturePro( 
+            rm.texturaSparkles, qaEstrela->fonte,
+            (Rectangle) { 
+                j->ret.x + j->ret.width / 2 - qaEstrela->fonte.width / 2,
+                j->ret.y + j->ret.height / 2 - qaEstrela->fonte.height / 2,
+                qaEstrela->fonte.width, qaEstrela->fonte.height 
+            },
+            (Vector2) { 0 }, 0.0f, WHITE 
+        );
     }
 
     if ( MOSTRAR_RETANGULOS ) {
@@ -612,6 +669,54 @@ static void resolverColisaoJogadorItensMapa( Jogador *j, Mapa *mapa ) {
                 PlaySound( rm.somAnel );
             }
 
+        } else if ( item->tipo == TIPO_ITEM_ESTRELINHA ) {
+
+            ItemEstrelinha *itemEstrela = (ItemEstrelinha*) item->objeto;
+
+            if ( !itemEstrela->ativo || itemEstrela->estado == ESTADO_ITEM_ESTRELINHA_COLETADO ) {
+                el = el->proximo;
+                continue;
+            }
+
+            QuadroAnimacao *qaItem = getQuadroAnimacaoAtualItemEstrelinha( itemEstrela );
+            Rectangle retColItemCalculado = {
+                itemEstrela->ret.x + qaItem->retColisao.x,
+                itemEstrela->ret.y + qaItem->retColisao.y,
+                qaItem->retColisao.width, qaItem->retColisao.height
+            };
+
+            if ( CheckCollisionRecs( retColCalculado, retColItemCalculado ) ) {
+                itemEstrela->estado = ESTADO_ITEM_ESTRELINHA_COLETADO;
+                j->invulneravel = true;
+                j->temEstrela = true; // <-- ATIVA O EFEITO VISUAL
+                j->tempoInvulnerabilidade = 15.0f; 
+                j->contadorTempoInvulnerabilidade = 0.0f; 
+                j->piscaPisca = false; 
+                PlaySound( rm.somAnel ); 
+            }
+
+        } else if ( item->tipo == TIPO_ITEM_ESCUDO ) {
+
+            ItemEscudo *itemEscudo = (ItemEscudo*) item->objeto;
+
+            if ( !itemEscudo->ativo || itemEscudo->estado == ESTADO_ITEM_ESCUDO_COLETADO ) {
+                el = el->proximo;
+                continue;
+            }
+
+            QuadroAnimacao *qaItem = getQuadroAnimacaoAtualItemEscudo( itemEscudo );
+            Rectangle retColItemCalculado = {
+                itemEscudo->ret.x + qaItem->retColisao.x,
+                itemEscudo->ret.y + qaItem->retColisao.y,
+                qaItem->retColisao.width, qaItem->retColisao.height
+            };
+
+            if ( CheckCollisionRecs( retColCalculado, retColItemCalculado ) ) {
+                itemEscudo->estado = ESTADO_ITEM_ESCUDO_COLETADO;
+                j->temEscudo = true;
+                PlaySound( rm.somAnel ); // Substitua pelo som de escudo
+            }
+
         }
 
         el = el->proximo;
@@ -679,10 +784,18 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
                     PlaySound( rm.somHitInimigo );
                     j->pontuacao += 100;
                 } else if ( !j->invulneravel ) {
-                    if ( j->quantidadeAneis > 0 ) {
+                    if ( j->temEscudo ) {
+                        j->temEscudo = false;
+                        j->invulneravel = true;
+                        j->tempoInvulnerabilidade = 3.0f; // Tempo de recuo/invulnerabilidade padrão
+                        j->contadorTempoInvulnerabilidade = 0.0f;
+                        PlaySound( rm.somHitInimigo ); // Som de escudo quebrando
+                    } else if ( j->quantidadeAneis > 0 ) {
                         j->quantidadeAneis = 0;
                         PlaySound( rm.somHitComAnel );
-                        j->invulneravel = true; // Só ganha invulnerabilidade se sobreviveu
+                        j->invulneravel = true;
+                        j->tempoInvulnerabilidade = 3.0f; 
+                        j->contadorTempoInvulnerabilidade = 0.0f;
                     } else {
                         matarJogador( j );
                     }

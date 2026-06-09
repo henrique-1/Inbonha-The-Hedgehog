@@ -88,11 +88,29 @@ typedef enum EstadoItemAnelAzul {
 } EstadoItemAnelAzul;
 
 /**
+ * @brief Representa o estado do item do tipo Estrela.
+ */
+typedef enum EstadoItemEstrelinha {
+    ESTADO_ITEM_ESTRELINHA_PARADO,
+    ESTADO_ITEM_ESTRELINHA_COLETADO,
+} EstadoItemEstrelinha;
+
+/**
+ * @brief Representa o estado do item do tipo Escudo.
+ */
+typedef enum EstadoItemEscudo {
+    ESTADO_ITEM_ESCUDO_PARADO,
+    ESTADO_ITEM_ESCUDO_COLETADO,
+} EstadoItemEscudo;
+
+/**
  * @brief Representa o tipo de um item.
  */
 typedef enum TipoItem {
     TIPO_ITEM_ANEL,
     TIPO_ITEM_ANEL_AZUL,
+    TIPO_ITEM_ESTRELINHA,
+    TIPO_ITEM_ESCUDO
 } TipoItem;
 
 /**
@@ -185,6 +203,11 @@ typedef struct Jogador {
     float contadorTempoTedio;
     float tempoParaTedio;
 
+    bool temEscudo;
+    bool temEstrela;
+
+    Animacao animacaoEscudo;
+    Animacao animacaoEstrela;
 } Jogador;
 
 /**
@@ -325,6 +348,40 @@ typedef struct ItemAnelAzul {
     Animacao animacaoColetando;
 
 } ItemAnelAzul;
+
+/**
+ * @brief Representa um item do tipo Estrelinha.
+ */
+typedef struct ItemEstrelinha {
+    Rectangle ret;
+    Color cor;
+
+    EstadoItemEstrelinha estado;
+    bool ativo;
+
+    Animacao *animacoes[2];
+    int quantidadeAnimacoes;
+
+    Animacao animacaoParado;
+    Animacao animacaoColetando;
+} ItemEstrelinha;
+
+/**
+ * @brief Representa um item do tipo Escudo.
+ */
+typedef struct ItemEscudo {
+    Rectangle ret;
+    Color cor;
+
+    EstadoItemEscudo estado;
+    bool ativo;
+
+    Animacao *animacoes[2];
+    int quantidadeAnimacoes;
+
+    Animacao animacaoParado;
+    Animacao animacaoColetando;
+} ItemEscudo;
 
 /**
  * @brief Representa um item estático do mapa.

@@ -45,11 +45,15 @@ void loadResourcesResourceManager( void ) {
         "resources/imagens/itens/itens.png",
         (Color[]) {
             { 16, 112, 132, 255 },
+            { 13, 72, 7, 255 },
+            { 37, 102, 26, 255 },
         },
         (Color[]) {
             BLANK,
+            BLANK,
+            BLANK,
         },
-        1
+        3
     );
 
     rm.texturaHudScore = carregarTexturaAlterandoCores(
@@ -152,6 +156,26 @@ void loadResourcesResourceManager( void ) {
         }, 
         2 
     );
+
+    rm.texturaShield = carregarTexturaAlterandoCores( "resources/imagens/sprites/player_shield.png",
+        (Color[]) {
+            {13, 72, 7, 255}
+        }, 
+        (Color[]) {
+            BLANK,
+        }, 
+        1 
+    );
+
+    rm.texturaSparkles = carregarTexturaAlterandoCores( "resources/imagens/sprites/player_invincibility_sparkles.png",
+        (Color[]) {
+            {13, 72, 7, 255}
+        }, 
+        (Color[]) {
+            BLANK,
+        }, 
+        1 
+    );
     
 
     rm.texturaTerreno = LoadTexture( "resources/imagens/tiles/terreno.png" );
@@ -171,6 +195,8 @@ void loadResourcesResourceManager( void ) {
     SetTextureFilter( rm.texturaHudNumeros, TEXTURE_FILTER_POINT );
     SetTextureFilter( rm.texturaHudNumerosPontos, TEXTURE_FILTER_POINT );
     SetTextureFilter( rm.texturaHudVidas, TEXTURE_FILTER_POINT );
+    SetTextureFilter( rm.texturaShield, TEXTURE_FILTER_POINT );
+    SetTextureFilter( rm.texturaSparkles, TEXTURE_FILTER_POINT );
 
     rm.somAnel = LoadSound( "resources/sons/efeitos/anel.wav" );
     rm.somFrenagem = LoadSound( "resources/sons/efeitos/frenagem.wav" );
@@ -199,6 +225,8 @@ void unloadResourcesResourceManager( void ) {
     UnloadTexture( rm.texturaHudTimeRed );
     UnloadTexture( rm.texturaHudTimeColon );
     UnloadTexture( rm.texturaHudRingsRed );
+    UnloadTexture( rm.texturaShield );
+    UnloadTexture( rm.texturaSparkles );
 
     UnloadSound( rm.somAnel );
     UnloadSound( rm.somFrenagem );
