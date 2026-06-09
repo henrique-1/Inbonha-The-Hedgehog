@@ -15,6 +15,8 @@
 #include "Inimigo.h"
 #include "InimigoMotobug.h"
 #include "InimigoSpikes.h"
+#include "InimigoBuzz.h"
+#include "InimigoCrabmeat.h"
 #include "Item.h"
 #include "ItemAnel.h"
 #include "ItemAnelAzul.h"
@@ -720,6 +722,98 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
                 if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
                     j->vel.y = j->velPulo;
                     spikes->estado = ESTADO_INIMIGO_SPIKES_MORRENDO;
+                    PlaySound( rm.somHitInimigo );
+                    j->pontuacao += 100;
+                } else if ( !j->invulneravel ) {
+                    if ( j->quantidadeAneis > 0 ) {
+                        j->quantidadeAneis = 0;
+                        PlaySound( rm.somHitComAnel );
+                        j->invulneravel = true; // Só ganha invulnerabilidade se sobreviveu
+                    } else {
+                        matarJogador( j );
+                    }
+                }
+
+                return; // um inimigo de cada vez!
+
+            }
+
+        } else if ( inimigo->tipo == TIPO_INIMIGO_BUZZ ) {
+
+            InimigoBuzz *buzz = (InimigoBuzz*) inimigo->objeto;
+
+            if ( !buzz->ativo || buzz->estado == ESTADO_INIMIGO_BUZZ_MORRENDO ) {
+                el = el->proximo;
+                continue;
+            }
+
+            qaInimigo = getQuadroAnimacaoAtualInimigoBuzz( buzz );
+            olhandoParaDireita = &buzz->olhandoParaDireita;
+            ret = &buzz->ret;
+
+            float deslocamentoX = *olhandoParaDireita
+                ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width
+                : qaInimigo->retColisao.x;
+            float deslocamentoY = qaInimigo->retColisao.y;
+
+            Rectangle retColInimigoCalculado = {
+                ret->x + deslocamentoX,
+                ret->y + deslocamentoY,
+                qaInimigo->retColisao.width,
+                qaInimigo->retColisao.height
+            };
+
+            if ( CheckCollisionRecs( retColCalculado, retColInimigoCalculado ) ) {
+
+                if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
+                    j->vel.y = j->velPulo;
+                    buzz->estado = ESTADO_INIMIGO_BUZZ_MORRENDO;
+                    PlaySound( rm.somHitInimigo );
+                    j->pontuacao += 100;
+                } else if ( !j->invulneravel ) {
+                    if ( j->quantidadeAneis > 0 ) {
+                        j->quantidadeAneis = 0;
+                        PlaySound( rm.somHitComAnel );
+                        j->invulneravel = true; // Só ganha invulnerabilidade se sobreviveu
+                    } else {
+                        matarJogador( j );
+                    }
+                }
+
+                return; // um inimigo de cada vez!
+
+            }
+
+        } else if ( inimigo->tipo == TIPO_INIMIGO_CRABMEAT ) {
+
+            InimigoCrabmeat *crabmeat = (InimigoCrabmeat*) inimigo->objeto;
+
+            if ( !crabmeat->ativo || crabmeat->estado == ESTADO_INIMIGO_CRABMEAT_MORRENDO) {
+                el = el->proximo;
+                continue;
+            }
+
+            qaInimigo = getQuadroAnimacaoAtualInimigoCrabmeat( crabmeat );
+            olhandoParaDireita = &crabmeat->olhandoParaDireita;
+            ret = &crabmeat->ret;
+
+            float deslocamentoX = *olhandoParaDireita
+                ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width
+                : qaInimigo->retColisao.x;
+            float deslocamentoY = qaInimigo->retColisao.y;
+
+            Rectangle retColInimigoCalculado = {
+                ret->x + deslocamentoX,
+                ret->y + deslocamentoY,
+                qaInimigo->retColisao.width,
+                qaInimigo->retColisao.height
+            };
+
+            if ( CheckCollisionRecs( retColCalculado, retColInimigoCalculado ) ) {
+
+                if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
+                    j->vel.y = j->velPulo;
+                    crabmeat->estado = ESTADO_INIMIGO_CRABMEAT_MORRENDO;
                     PlaySound( rm.somHitInimigo );
                     j->pontuacao += 100;
                 } else if ( !j->invulneravel ) {

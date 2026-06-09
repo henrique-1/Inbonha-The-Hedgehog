@@ -46,11 +46,29 @@ typedef enum EstadoInimigoSpikes {
 } EstadoInimigoSpikes;
 
 /**
+ * @brief Representa o estado do inimigo do tipo Buzz.
+ */
+typedef enum EstadoInimigoBuzz {
+    ESTADO_INIMIGO_BUZZ_VOANDO,
+    ESTADO_INIMIGO_BUZZ_MORRENDO,
+} EstadoInimigoBuzz;
+
+/**
+ * @brief Representa o estado do inimigo do tipo Crabmeat.
+ */
+typedef enum EstadoInimigoCrabmeat {
+    ESTADO_INIMIGO_CRABMEAT_ANDANDO,
+    ESTADO_INIMIGO_CRABMEAT_MORRENDO,
+} EstadoInimigoCrabmeat;
+
+/**
  * @brief Representa o tipo de um inimigo.
  */
 typedef enum TipoInimigo {
     TIPO_INIMIGO_MOTOBUG,
-    TIPO_INIMIGO_SPIKES
+    TIPO_INIMIGO_SPIKES,
+    TIPO_INIMIGO_BUZZ,
+    TIPO_INIMIGO_CRABMEAT
 } TipoInimigo;
 
 /**
@@ -217,6 +235,49 @@ typedef struct InimigoSpikes {
     Animacao animacaoMorrendo;
 
 } InimigoSpikes;
+
+/**
+ * @brief Representa um inimigo do tipo Buzz.
+ */
+typedef struct InimigoBuzz {
+    Rectangle ret;
+    Vector2 vel;
+    Color cor;
+
+    float velVoando; // Inimigo voador não precisa de maxQueda
+
+    EstadoInimigoBuzz estado;
+    bool ativo;
+    bool olhandoParaDireita;
+    
+    Animacao *animacoes[2];
+    int quantidadeAnimacoes;
+
+    Animacao animacaoVoando;
+    Animacao animacaoMorrendo;
+} InimigoBuzz;
+
+/**
+ * @brief Representa um inimigo do tipo Crabmeat.
+ */
+typedef struct InimigoCrabmeat {
+    Rectangle ret;
+    Vector2 vel;
+    Color cor;
+
+    float velAndando;
+    float velMaxQueda;
+
+    EstadoInimigoCrabmeat estado;
+    bool ativo;
+    bool olhandoParaDireita;
+    
+    Animacao *animacoes[2];
+    int quantidadeAnimacoes;
+
+    Animacao animacaoAndando;
+    Animacao animacaoMorrendo;
+} InimigoCrabmeat;
 
 /**
  * @brief Representa um inimigo.

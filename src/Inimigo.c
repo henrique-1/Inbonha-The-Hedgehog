@@ -13,6 +13,8 @@
 #include "Inimigo.h"
 #include "InimigoMotobug.h"
 #include "InimigoSpikes.h"
+#include "InimigoBuzz.h"
+#include "InimigoCrabmeat.h"
 #include "Tipos.h"
 
 /**
@@ -40,6 +42,12 @@ void destruirInimigo( Inimigo *inimigo ) {
             case TIPO_INIMIGO_SPIKES:
                 destruirInimigoSpikes( (InimigoSpikes*) inimigo->objeto );
                 break;
+            case TIPO_INIMIGO_BUZZ:
+                destruirInimigoBuzz( (InimigoBuzz*) inimigo->objeto );
+                break;
+            case TIPO_INIMIGO_CRABMEAT:
+                destruirInimigoCrabmeat ((InimigoCrabmeat*) inimigo->objeto);
+                break;
             default:
                 break;
         }
@@ -59,6 +67,12 @@ void atualizarInimigo( Inimigo *inimigo, GameWorld *gw, float delta ) {
         case TIPO_INIMIGO_SPIKES:
             atualizarInimigoSpikes((InimigoSpikes*) inimigo->objeto, gw, delta);
             break;
+        case TIPO_INIMIGO_BUZZ:
+            atualizarInimigoBuzz( (InimigoBuzz*) inimigo->objeto, gw, delta );
+            break;
+        case TIPO_INIMIGO_CRABMEAT:
+            atualizarInimigoCrabmeat( (InimigoCrabmeat*) inimigo->objeto, gw, delta );
+            break;
         default:
             return;
     }
@@ -76,6 +90,12 @@ void desenharInimigo( Inimigo *inimigo ) {
             break;
         case TIPO_INIMIGO_SPIKES:
             desenharInimigoSpikes((InimigoSpikes*) inimigo->objeto);
+            break;
+        case TIPO_INIMIGO_BUZZ:
+            desenharInimigoBuzz( (InimigoBuzz*) inimigo->objeto );
+            break;
+        case TIPO_INIMIGO_CRABMEAT:
+            desenharInimigoCrabmeat( (InimigoCrabmeat*) inimigo->objeto );
             break;
         default:
             return;
@@ -107,7 +127,18 @@ void resolverColisaoInimigoObstaculosMapaX( Inimigo *inimigo, Mapa *mapa ) {
             qa = getQuadroAnimacaoAtualInimigoSpikes( spikes );
             olhandoParaDireita = &spikes->olhandoParaDireita;
             ret = &spikes->ret;
-        } else {
+        } else if ( inimigo->tipo == TIPO_INIMIGO_BUZZ ) {
+            InimigoBuzz *buzz = (InimigoBuzz*) inimigo->objeto;
+            qa = getQuadroAnimacaoAtualInimigoBuzz( buzz );
+            olhandoParaDireita = &buzz->olhandoParaDireita;
+            ret = &buzz->ret;
+        } else if ( inimigo->tipo == TIPO_INIMIGO_CRABMEAT ) {
+            InimigoCrabmeat *crab = (InimigoCrabmeat*) inimigo->objeto;
+            qa = getQuadroAnimacaoAtualInimigoCrabmeat( crab );
+            olhandoParaDireita = &crab->olhandoParaDireita;
+            ret = &crab->ret;
+        }
+        else {
             el = el->proximo;
             continue;
         }
@@ -170,6 +201,12 @@ void resolverColisaoInimigoObstaculosMapaY( Inimigo *inimigo, Mapa *mapa ) {
             olhandoParaDireita = &spikes->olhandoParaDireita;
             ret = &spikes->ret;
             vel = &spikes->vel;
+        } else if ( inimigo->tipo == TIPO_INIMIGO_CRABMEAT ) {
+            InimigoCrabmeat *crab = (InimigoCrabmeat*) inimigo->objeto;
+            qa = getQuadroAnimacaoAtualInimigoCrabmeat( crab );
+            olhandoParaDireita = &crab->olhandoParaDireita;
+            ret = &crab->ret;
+            vel = &crab->vel;
         } else {
             el = el->proximo;
             continue;
