@@ -177,6 +177,15 @@ void loadResourcesResourceManager( void ) {
         1 
     );
     
+    rm.texturaTelaTitulo = carregarTexturaAlterandoCores( "resources/imagens/hud/miscallaneous.png",
+        (Color[]) {
+            {16, 112, 132, 255}
+        }, 
+        (Color[]) {
+            BLANK,
+        }, 
+        1 
+    );
 
     rm.texturaTerreno = LoadTexture( "resources/imagens/tiles/terreno.png" );
     rm.texturaFundo = LoadTexture( "resources/imagens/fundo/fundo.png" );
@@ -197,6 +206,7 @@ void loadResourcesResourceManager( void ) {
     SetTextureFilter( rm.texturaHudVidas, TEXTURE_FILTER_POINT );
     SetTextureFilter( rm.texturaShield, TEXTURE_FILTER_POINT );
     SetTextureFilter( rm.texturaSparkles, TEXTURE_FILTER_POINT );
+    SetTextureFilter( rm.texturaTelaTitulo, TEXTURE_FILTER_POINT );
 
     rm.somAnel = LoadSound( "resources/sons/efeitos/anel.wav" );
     rm.somFrenagem = LoadSound( "resources/sons/efeitos/frenagem.wav" );
@@ -229,6 +239,7 @@ void unloadResourcesResourceManager( void ) {
     UnloadTexture( rm.texturaHudRingsRed );
     UnloadTexture( rm.texturaShield );
     UnloadTexture( rm.texturaSparkles );
+    UnloadTexture( rm.texturaTelaTitulo );
 
     UnloadSound( rm.somAnel );
     UnloadSound( rm.somFrenagem );

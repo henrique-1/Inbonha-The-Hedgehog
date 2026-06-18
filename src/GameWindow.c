@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "Animacao.h"
 #include "GameWindow.h"
 #include "GameWorld.h"
 #include "ResourceManager.h"
@@ -48,9 +49,36 @@ GameWindow *createGameWindow(
     gameWindow->initAudio = initAudio;
     gameWindow->gw = NULL;
     gameWindow->initialized = false;
+    
+    // Define que o jogo sempre abre na tela de título
+    gameWindow->naTelaTitulo = true;
+
+    // Configuração da Animação da Tela de Título (18 quadros)
+    gameWindow->animacaoTelaTitulo.quantidadeQuadros = 18;
+    gameWindow->animacaoTelaTitulo.quadroAtual = 0;
+    gameWindow->animacaoTelaTitulo.contadorTempoQuadro = 0.0f;
+    gameWindow->animacaoTelaTitulo.pararNoUltimoQuadro = true;
+    gameWindow->animacaoTelaTitulo.executarUmaVez = true;
+    gameWindow->animacaoTelaTitulo.finalizada = false;
+    criarQuadrosAnimacao( &gameWindow->animacaoTelaTitulo, 18 );
+
+    // Mapeamento matemático do Grid da Sprite (6 Linhas x 3 Colunas)
+    int frameIndex = 0;
+    for ( int linha = 0; linha < 6; linha++ ) {
+        for ( int coluna = 0; coluna < 3; coluna++ ) {
+            gameWindow->animacaoTelaTitulo.quadros[frameIndex].duracao = 0.1f;
+            gameWindow->animacaoTelaTitulo.quadros[frameIndex].fonte = (Rectangle) {
+                24 + coluna * (320 + 8), // Coordenada X dinâmica
+                520 + linha * (224 + 8), // Coordenada Y dinâmica
+                320, 224                 // Dimensão de cada quadro
+            };
+            // gameWindow->animacaoTelaTitulo.quadros[frameIndex].espelhado = false;
+            gameWindow->animacaoTelaTitulo.quadros[frameIndex].retColisao = (Rectangle){0};
+            frameIndex++;
+        }
+    }
 
     return gameWindow;
-
 }
 
 /**
@@ -63,33 +91,13 @@ void initGameWindow( GameWindow *gameWindow ) {
 
         gameWindow->initialized = true;
 
-        if ( gameWindow->antialiasing ) {
-            SetConfigFlags( FLAG_MSAA_4X_HINT );
-        }
-
-        if ( gameWindow->resizable ) {
-            SetConfigFlags( FLAG_WINDOW_RESIZABLE );
-        }
-
-        if ( gameWindow->fullScreen ) {
-            SetConfigFlags( FLAG_FULLSCREEN_MODE );
-        }
-
-        if ( gameWindow->undecorated ) {
-            SetConfigFlags( FLAG_WINDOW_UNDECORATED );
-        }
-
-        if ( gameWindow->alwaysOnTop ) {
-            SetConfigFlags( FLAG_WINDOW_TOPMOST );
-        }
-
-        if ( gameWindow->invisibleBackground ) {
-            SetConfigFlags( FLAG_WINDOW_TRANSPARENT );
-        }
-
-        if ( gameWindow->alwaysRun ) {
-            SetConfigFlags( FLAG_WINDOW_ALWAYS_RUN );
-        }
+        if ( gameWindow->antialiasing ) SetConfigFlags( FLAG_MSAA_4X_HINT );
+        if ( gameWindow->resizable ) SetConfigFlags( FLAG_WINDOW_RESIZABLE );
+        if ( gameWindow->fullScreen ) SetConfigFlags( FLAG_FULLSCREEN_MODE );
+        if ( gameWindow->undecorated ) SetConfigFlags( FLAG_WINDOW_UNDECORATED );
+        if ( gameWindow->alwaysOnTop ) SetConfigFlags( FLAG_WINDOW_TOPMOST );
+        if ( gameWindow->invisibleBackground ) SetConfigFlags( FLAG_WINDOW_TRANSPARENT );
+        if ( gameWindow->alwaysRun ) SetConfigFlags( FLAG_WINDOW_ALWAYS_RUN );
 
         InitWindow( gameWindow->width, gameWindow->height, gameWindow->title );
 
@@ -108,17 +116,56 @@ void initGameWindow( GameWindow *gameWindow ) {
         // game loop
         while ( !WindowShouldClose() ) {
 
-            // O delta time é limitado a 1/30s para evitar que frames muito
-            // longos (ex.: lentidão na inicialização) causem deslocamentos
-            // grandes demais, fazendo personagens atravessarem obstáculos
-            // (tunneling).
+            // O delta time é limitado a 1/30s para evitar tunneling
             float delta = GetFrameTime();
             if ( delta > 1.0f / 30.0f ) {
                 delta = 1.0f / 30.0f;
             }
 
-            updateGameWorld( gameWindow->gw, delta );
-            drawGameWorld( gameWindow->gw );
+            // MÁQUINA DE ESTADOS DA JANELA (TÍTULO VS JOGO)
+            if ( gameWindow->naTelaTitulo ) {
+                
+                // 1. Atualiza Animação
+                atualizarAnimacao( &gameWindow->animacaoTelaTitulo, delta );
+
+                // 2. Escuta Entradas do Jogador para iniciar a fase
+                if ( GetKeyPressed() != 0 || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_MIDDLE_RIGHT) ) {
+                    gameWindow->naTelaTitulo = false;
+                    PlaySound( rm.somAnel ); // Feedback sonoro ao dar Play
+                }
+
+                // 3. Desenha a Tela de Título
+                BeginDrawing();
+                ClearBackground( BLACK );
+
+                QuadroAnimacao *qa = getQuadroAtualAnimacao( &gameWindow->animacaoTelaTitulo );
+                float escala = 2.0f; // Multiplicador de tamanho
+                
+                // Centraliza a imagem na janela
+                Rectangle dest = {
+                    (gameWindow->width / 2.0f) - ((320 * escala) / 2.0f),
+                    (gameWindow->height / 2.0f) - ((224 * escala) / 2.0f),
+                    320 * escala, 224 * escala
+                };
+
+                DrawTexturePro( rm.texturaTelaTitulo, qa->fonte, dest, (Vector2){0}, 0.0f, WHITE );
+
+                // Efeito pisca-pisca clássico de PRESS START
+                if ( (int)(GetTime() * 2) % 2 == 0 ) {
+                    const char* msg = "PRESS ANY BUTTON TO START";
+                    int fontSize = 20;
+                    DrawText( msg, (gameWindow->width / 2) - (MeasureText(msg, fontSize) / 2), dest.y + dest.height - 40, fontSize, RAYWHITE );
+                }
+
+                EndDrawing();
+
+            } else {
+                
+                // 4. Se não estiver no título, processa a GameWorld normalmente
+                updateGameWorld( gameWindow->gw, delta );
+                drawGameWorld( gameWindow->gw );
+                
+            }
         }
 
         if ( gameWindow->loadResources ) {
@@ -134,9 +181,7 @@ void initGameWindow( GameWindow *gameWindow ) {
         }
 
         CloseWindow();
-
     }
-
 }
 
 /**
@@ -144,6 +189,9 @@ void initGameWindow( GameWindow *gameWindow ) {
  */
 void destroyGameWindow( GameWindow *gameWindow ) {
     if ( gameWindow != NULL ) {
+        // Limpa as structs de animação criadas
+        destruirQuadrosAnimacao( &gameWindow->animacaoTelaTitulo );
+        
         destroyGameWorld( gameWindow->gw );
         free( gameWindow );
     }

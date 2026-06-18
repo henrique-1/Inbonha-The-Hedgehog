@@ -17,6 +17,9 @@ typedef struct GameWindow {
     int height;
     const char *title;
 
+    bool naTelaTitulo;
+    Animacao animacaoTelaTitulo;
+
     int targetFPS;
     bool antialiasing;
     bool resizable;
