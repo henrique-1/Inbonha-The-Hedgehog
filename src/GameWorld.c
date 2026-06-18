@@ -57,10 +57,33 @@ void destroyGameWorld( GameWorld *gw ) {
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
 
-    if ( !IsMusicStreamPlaying( rm.musicaFase01 ) ) {
-        PlayMusicStream( rm.musicaFase01 );
+    if ( gw->jogador->temEstrela && gw->jogador->estado != ESTADO_JOGADOR_MORTO ) {
+        
+        // 1. Pausa a música normal da fase
+        PauseMusicStream( rm.musicaFase01 ); 
+        
+        // 2. Se a música de invencibilidade não estiver tocando, dê Play nela
+        if ( !IsMusicStreamPlaying( rm.musicaInvencibilidade ) ) {
+            PlayMusicStream( rm.musicaInvencibilidade );
+        }
+        
+        // 3. Atualiza o Stream da música de invencibilidade para ela tocar
+        UpdateMusicStream( rm.musicaInvencibilidade );
+        
     } else {
-        UpdateMusicStream( rm.musicaFase01 );
+        
+        // 1. Se a música de invencibilidade estiver tocando (o poder acabou de acabar)
+        if ( IsMusicStreamPlaying( rm.musicaInvencibilidade ) ) {
+            StopMusicStream( rm.musicaInvencibilidade ); // Para a invencibilidade
+            ResumeMusicStream( rm.musicaFase01 );        // Retoma a música normal de onde parou
+        }
+        
+        // 2. Atualiza o Stream da música da fase normalmente (Seu código original)
+        if ( !IsMusicStreamPlaying( rm.musicaFase01 ) ) {
+            PlayMusicStream( rm.musicaFase01 );
+        } else {
+            UpdateMusicStream( rm.musicaFase01 );
+        }
     }
 
     if ( IsKeyPressed( KEY_R ) ) {

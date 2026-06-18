@@ -2,7 +2,7 @@ I                                                                               
 C                   a                                                                                                                                                              E
 C                  aM                                                                                                                                                              E
 C                 aM                         a                                                                                                                                     E
-C                aM          a              aaa                                                                                                                                    E
+C                aM          a        2     aaa                                                                                                                                    E
 C               aM          aaa            aaaaa                                                                                                                                   E
 C         a    aM          aLBIa          aaaaaaa                                                                                                                                  E
 C         Ma   M    a    aaLGAFIaa       aaaaaaaaa                                                                                                                                 E
@@ -10,8 +10,8 @@ C          Ma      aM   LBBGAAAFBBI    LBBBBBBBBBBBI                            
 C           Ma    aM    KDDDDDDDDDJ    KDDDDDDDDDDDJ                                                                                                                               E
 C            M   aM                                                                                                                                                                E
 C               aM                                                                                                                                                                 E
-C           2   M                                                                                                                                                                  E
+C               M     2                                                                                                                                                            E
 C                                                                                                                                                                                  E
-C 0 0 0 0 M    3   e s M   1   1   1   1   1   1   1   1   M                                                                                                                       E
+C 0 0 0 0 M       e  s M   1   1   1   1   1   1   1   1   M  3                                                                                                                    E
 FBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBG
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

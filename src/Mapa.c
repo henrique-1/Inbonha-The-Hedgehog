@@ -153,10 +153,11 @@ Mapa *carregarMapa( const char *caminhoArquivo ) {
                             item = criarItem( TIPO_ITEM_ESTRELINHA );
                             item->objeto = criarItemEstrelinha( 
                                 (Rectangle) { 
-                                    .x = novoMapa->dimensaoPadraoElementos * colunaAtual + 8, 
-                                    .y = novoMapa->dimensaoPadraoElementos * linhaAtual + 5, 
-                                    .width = 32, 
-                                    .height = 32
+                                    // Centraliza X e ancora Y no bloco do chão
+                                    .x = novoMapa->dimensaoPadraoElementos * colunaAtual + (novoMapa->dimensaoPadraoElementos / 2) - 32, 
+                                    .y = novoMapa->dimensaoPadraoElementos * (linhaAtual + 1) - 64, 
+                                    .width = 64, 
+                                    .height = 64
                                 },
                                 WHITE
                             );
@@ -168,10 +169,10 @@ Mapa *carregarMapa( const char *caminhoArquivo ) {
                             item = criarItem( TIPO_ITEM_ESCUDO );
                             item->objeto = criarItemEscudo( 
                                 (Rectangle) { 
-                                    .x = novoMapa->dimensaoPadraoElementos * colunaAtual + 8, 
-                                    .y = novoMapa->dimensaoPadraoElementos * linhaAtual + 5, 
-                                    .width = 32, 
-                                    .height = 32
+                                    .x = novoMapa->dimensaoPadraoElementos * colunaAtual + (novoMapa->dimensaoPadraoElementos / 2) - 32, 
+                                    .y = novoMapa->dimensaoPadraoElementos * (linhaAtual + 1) - 64, 
+                                    .width = 64, 
+                                    .height = 64
                                 },
                                 WHITE
                             );

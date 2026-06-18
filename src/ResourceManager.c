@@ -204,8 +204,10 @@ void loadResourcesResourceManager( void ) {
     rm.somHitInimigo = LoadSound( "resources/sons/efeitos/hit-inimigo.wav" );
     rm.somMorte = LoadSound( "resources/sons/efeitos/morte.wav" );
     rm.somPulo = LoadSound( "resources/sons/efeitos/pulo.wav" );
+    rm.somEscudo = LoadSound( "resources/sons/efeitos/Barrier.wav" );
 
     rm.musicaFase01 = LoadMusicStream( "resources/sons/musicas/green-hill-zone.mp3" );
+    rm.musicaInvencibilidade = LoadMusicStream( "resources/sons/musicas/invincibility_sonic_the_hedgehog.mp3" );
 
 }
 
@@ -234,7 +236,9 @@ void unloadResourcesResourceManager( void ) {
     UnloadSound( rm.somHitInimigo );
     UnloadSound( rm.somMorte );
     UnloadSound( rm.somPulo );
+    UnloadSound( rm.somEscudo );
 
     UnloadMusicStream( rm.musicaFase01 );
+    UnloadMusicStream( rm.musicaInvencibilidade );
 
 }

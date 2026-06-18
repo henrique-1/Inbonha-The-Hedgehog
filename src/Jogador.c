@@ -437,14 +437,20 @@ void desenharJogador( Jogador *j ) {
         desenharQuadroAnimacaoJogador( j, qa, WHITE );
     }
 
+    float escalaVFX = 2.2f;
+
     if ( j->temEscudo && j->estado != ESTADO_JOGADOR_MORTO ) {
         QuadroAnimacao *qaEscudo = getQuadroAtualAnimacao( &j->animacaoEscudo );
+        
+        float larguraEscalada = qaEscudo->fonte.width * escalaVFX;
+        float alturaEscalada = qaEscudo->fonte.height * escalaVFX;
+
         DrawTexturePro( 
             rm.texturaShield, qaEscudo->fonte,
             (Rectangle) { 
-                j->ret.x + j->ret.width / 2 - qaEscudo->fonte.width / 2, // Centraliza X
-                j->ret.y + j->ret.height / 2 - qaEscudo->fonte.height / 2, // Centraliza Y
-                qaEscudo->fonte.width, qaEscudo->fonte.height 
+                j->ret.x + j->ret.width / 2 - larguraEscalada / 2, // Mantém centralizado em X
+                j->ret.y + j->ret.height / 2 - alturaEscalada / 2, // Mantém centralizado em Y
+                larguraEscalada, alturaEscalada 
             },
             (Vector2) { 0 }, 0.0f, WHITE 
         );
@@ -452,12 +458,16 @@ void desenharJogador( Jogador *j ) {
 
     if ( j->temEstrela && j->estado != ESTADO_JOGADOR_MORTO ) {
         QuadroAnimacao *qaEstrela = getQuadroAtualAnimacao( &j->animacaoEstrela );
+        
+        float larguraEscalada = qaEstrela->fonte.width * escalaVFX;
+        float alturaEscalada = qaEstrela->fonte.height * escalaVFX;
+
         DrawTexturePro( 
             rm.texturaSparkles, qaEstrela->fonte,
             (Rectangle) { 
-                j->ret.x + j->ret.width / 2 - qaEstrela->fonte.width / 2,
-                j->ret.y + j->ret.height / 2 - qaEstrela->fonte.height / 2,
-                qaEstrela->fonte.width, qaEstrela->fonte.height 
+                j->ret.x + j->ret.width / 2 - larguraEscalada / 2,
+                j->ret.y + j->ret.height / 2 - alturaEscalada / 2,
+                larguraEscalada, alturaEscalada 
             },
             (Vector2) { 0 }, 0.0f, WHITE 
         );
@@ -692,7 +702,7 @@ static void resolverColisaoJogadorItensMapa( Jogador *j, Mapa *mapa ) {
                 j->tempoInvulnerabilidade = 15.0f; 
                 j->contadorTempoInvulnerabilidade = 0.0f; 
                 j->piscaPisca = false; 
-                PlaySound( rm.somAnel ); 
+                PlaySound( rm.somHitInimigo );
             }
 
         } else if ( item->tipo == TIPO_ITEM_ESCUDO ) {
@@ -714,7 +724,7 @@ static void resolverColisaoJogadorItensMapa( Jogador *j, Mapa *mapa ) {
             if ( CheckCollisionRecs( retColCalculado, retColItemCalculado ) ) {
                 itemEscudo->estado = ESTADO_ITEM_ESCUDO_COLETADO;
                 j->temEscudo = true;
-                PlaySound( rm.somAnel ); // Substitua pelo som de escudo
+                PlaySound( rm.somEscudo ); // Substitua pelo som de escudo
             }
 
         }
@@ -764,22 +774,17 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
             olhandoParaDireita = &motobug->olhandoParaDireita;
             ret = &motobug->ret;
 
-            float deslocamentoX = *olhandoParaDireita
-                ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width
-                : qaInimigo->retColisao.x;
-            float deslocamentoY = qaInimigo->retColisao.y;
-
-            Rectangle retColInimigoCalculado = {
-                ret->x + deslocamentoX,
-                ret->y + deslocamentoY,
-                qaInimigo->retColisao.width,
-                qaInimigo->retColisao.height
-            };
+            float deslocX = *olhandoParaDireita ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width : qaInimigo->retColisao.x;
+            Rectangle retColInimigoCalculado = { ret->x + deslocX, ret->y + qaInimigo->retColisao.y, qaInimigo->retColisao.width, qaInimigo->retColisao.height };
 
             if ( CheckCollisionRecs( retColCalculado, retColInimigoCalculado ) ) {
-
-                if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
-                    j->vel.y = j->velPulo;
+                if ( j->temEstrela ) {
+                    // MATA INSTANTANEAMENTE SEM QUICAR (Poder da Estrela)
+                    motobug->estado = ESTADO_INIMIGO_MOTOBUG_MORRENDO;
+                    PlaySound( rm.somHitInimigo );
+                    j->pontuacao += 100;
+                } else if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
+                    j->vel.y = j->velPulo; // Quica no inimigo
                     motobug->estado = ESTADO_INIMIGO_MOTOBUG_MORRENDO;
                     PlaySound( rm.somHitInimigo );
                     j->pontuacao += 100;
@@ -787,9 +792,9 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
                     if ( j->temEscudo ) {
                         j->temEscudo = false;
                         j->invulneravel = true;
-                        j->tempoInvulnerabilidade = 3.0f; // Tempo de recuo/invulnerabilidade padrão
+                        j->tempoInvulnerabilidade = 3.0f;
                         j->contadorTempoInvulnerabilidade = 0.0f;
-                        PlaySound( rm.somHitInimigo ); // Som de escudo quebrando
+                        PlaySound( rm.somHitInimigo ); 
                     } else if ( j->quantidadeAneis > 0 ) {
                         j->quantidadeAneis = 0;
                         PlaySound( rm.somHitComAnel );
@@ -800,9 +805,7 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
                         matarJogador( j );
                     }
                 }
-
-                return; // um inimigo de cada vez!
-
+                return;
             }
 
         } else if ( inimigo->tipo == TIPO_INIMIGO_SPIKES ) {
@@ -818,37 +821,37 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
             olhandoParaDireita = &spikes->olhandoParaDireita;
             ret = &spikes->ret;
 
-            float deslocamentoX = *olhandoParaDireita
-                ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width
-                : qaInimigo->retColisao.x;
-            float deslocamentoY = qaInimigo->retColisao.y;
-
-            Rectangle retColInimigoCalculado = {
-                ret->x + deslocamentoX,
-                ret->y + deslocamentoY,
-                qaInimigo->retColisao.width,
-                qaInimigo->retColisao.height
-            };
+            float deslocX = *olhandoParaDireita ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width : qaInimigo->retColisao.x;
+            Rectangle retColInimigoCalculado = { ret->x + deslocX, ret->y + qaInimigo->retColisao.y, qaInimigo->retColisao.width, qaInimigo->retColisao.height };
 
             if ( CheckCollisionRecs( retColCalculado, retColInimigoCalculado ) ) {
-
-                if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
+                if ( j->temEstrela ) {
+                    spikes->estado = ESTADO_INIMIGO_SPIKES_MORRENDO;
+                    PlaySound( rm.somHitInimigo );
+                    j->pontuacao += 100;
+                } else if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
                     j->vel.y = j->velPulo;
                     spikes->estado = ESTADO_INIMIGO_SPIKES_MORRENDO;
                     PlaySound( rm.somHitInimigo );
                     j->pontuacao += 100;
                 } else if ( !j->invulneravel ) {
-                    if ( j->quantidadeAneis > 0 ) {
+                    if ( j->temEscudo ) {
+                        j->temEscudo = false;
+                        j->invulneravel = true;
+                        j->tempoInvulnerabilidade = 3.0f;
+                        j->contadorTempoInvulnerabilidade = 0.0f;
+                        PlaySound( rm.somHitInimigo ); 
+                    } else if ( j->quantidadeAneis > 0 ) {
                         j->quantidadeAneis = 0;
                         PlaySound( rm.somHitComAnel );
-                        j->invulneravel = true; // Só ganha invulnerabilidade se sobreviveu
+                        j->invulneravel = true;
+                        j->tempoInvulnerabilidade = 3.0f; 
+                        j->contadorTempoInvulnerabilidade = 0.0f;
                     } else {
                         matarJogador( j );
                     }
                 }
-
-                return; // um inimigo de cada vez!
-
+                return;
             }
 
         } else if ( inimigo->tipo == TIPO_INIMIGO_BUZZ ) {
@@ -864,37 +867,37 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
             olhandoParaDireita = &buzz->olhandoParaDireita;
             ret = &buzz->ret;
 
-            float deslocamentoX = *olhandoParaDireita
-                ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width
-                : qaInimigo->retColisao.x;
-            float deslocamentoY = qaInimigo->retColisao.y;
-
-            Rectangle retColInimigoCalculado = {
-                ret->x + deslocamentoX,
-                ret->y + deslocamentoY,
-                qaInimigo->retColisao.width,
-                qaInimigo->retColisao.height
-            };
+            float deslocX = *olhandoParaDireita ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width : qaInimigo->retColisao.x;
+            Rectangle retColInimigoCalculado = { ret->x + deslocX, ret->y + qaInimigo->retColisao.y, qaInimigo->retColisao.width, qaInimigo->retColisao.height };
 
             if ( CheckCollisionRecs( retColCalculado, retColInimigoCalculado ) ) {
-
-                if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
+                if ( j->temEstrela ) {
+                    buzz->estado = ESTADO_INIMIGO_BUZZ_MORRENDO;
+                    PlaySound( rm.somHitInimigo );
+                    j->pontuacao += 100;
+                } else if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
                     j->vel.y = j->velPulo;
                     buzz->estado = ESTADO_INIMIGO_BUZZ_MORRENDO;
                     PlaySound( rm.somHitInimigo );
                     j->pontuacao += 100;
                 } else if ( !j->invulneravel ) {
-                    if ( j->quantidadeAneis > 0 ) {
+                    if ( j->temEscudo ) {
+                        j->temEscudo = false;
+                        j->invulneravel = true;
+                        j->tempoInvulnerabilidade = 3.0f;
+                        j->contadorTempoInvulnerabilidade = 0.0f;
+                        PlaySound( rm.somHitInimigo ); 
+                    } else if ( j->quantidadeAneis > 0 ) {
                         j->quantidadeAneis = 0;
                         PlaySound( rm.somHitComAnel );
-                        j->invulneravel = true; // Só ganha invulnerabilidade se sobreviveu
+                        j->invulneravel = true;
+                        j->tempoInvulnerabilidade = 3.0f; 
+                        j->contadorTempoInvulnerabilidade = 0.0f;
                     } else {
                         matarJogador( j );
                     }
                 }
-
-                return; // um inimigo de cada vez!
-
+                return;
             }
 
         } else if ( inimigo->tipo == TIPO_INIMIGO_CRABMEAT ) {
@@ -910,37 +913,37 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
             olhandoParaDireita = &crabmeat->olhandoParaDireita;
             ret = &crabmeat->ret;
 
-            float deslocamentoX = *olhandoParaDireita
-                ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width
-                : qaInimigo->retColisao.x;
-            float deslocamentoY = qaInimigo->retColisao.y;
-
-            Rectangle retColInimigoCalculado = {
-                ret->x + deslocamentoX,
-                ret->y + deslocamentoY,
-                qaInimigo->retColisao.width,
-                qaInimigo->retColisao.height
-            };
+            float deslocX = *olhandoParaDireita ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width : qaInimigo->retColisao.x;
+            Rectangle retColInimigoCalculado = { ret->x + deslocX, ret->y + qaInimigo->retColisao.y, qaInimigo->retColisao.width, qaInimigo->retColisao.height };
 
             if ( CheckCollisionRecs( retColCalculado, retColInimigoCalculado ) ) {
-
-                if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
+                if ( j->temEstrela ) {
+                    crabmeat->estado = ESTADO_INIMIGO_CRABMEAT_MORRENDO;
+                    PlaySound( rm.somHitInimigo );
+                    j->pontuacao += 100;
+                } else if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
                     j->vel.y = j->velPulo;
                     crabmeat->estado = ESTADO_INIMIGO_CRABMEAT_MORRENDO;
                     PlaySound( rm.somHitInimigo );
                     j->pontuacao += 100;
                 } else if ( !j->invulneravel ) {
-                    if ( j->quantidadeAneis > 0 ) {
+                    if ( j->temEscudo ) {
+                        j->temEscudo = false;
+                        j->invulneravel = true;
+                        j->tempoInvulnerabilidade = 3.0f;
+                        j->contadorTempoInvulnerabilidade = 0.0f;
+                        PlaySound( rm.somHitInimigo ); 
+                    } else if ( j->quantidadeAneis > 0 ) {
                         j->quantidadeAneis = 0;
                         PlaySound( rm.somHitComAnel );
-                        j->invulneravel = true; // Só ganha invulnerabilidade se sobreviveu
+                        j->invulneravel = true;
+                        j->tempoInvulnerabilidade = 3.0f; 
+                        j->contadorTempoInvulnerabilidade = 0.0f;
                     } else {
                         matarJogador( j );
                     }
                 }
-
-                return; // um inimigo de cada vez!
-
+                return;
             }
 
         }
@@ -948,7 +951,6 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
         el = el->proximo;
 
     }
-
 }
 
 static void configurarAnimacaoJogador( Animacao *animacao, int qtdQuadros, int duracao, int inicioX, int inicioY, Rectangle retColisao ) {

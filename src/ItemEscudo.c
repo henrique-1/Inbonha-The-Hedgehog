@@ -24,7 +24,7 @@ ItemEscudo *criarItemEscudo( Rectangle ret, Color cor ) {
     novo->animacaoParado.finalizada = false;
     criarQuadrosAnimacao( &novo->animacaoParado, novo->animacaoParado.quantidadeQuadros );
     inicializarQuadrosAnimacao( novo->animacaoParado.quadros, 1, 1000,
-        1, 69, 32, 32, 0, false, (Rectangle) { 0, 0, 32, 32 } );
+        1, 69, 32, 32, 0, false, (Rectangle) { 0, 0, 64, 64 } );
 
     // Animação 2: TV Destruída (1 Quadro)
     novo->animacaoColetando.quantidadeQuadros = 1;
@@ -77,12 +77,24 @@ static void desenharQuadroAnimacaoItemEscudo( ItemEscudo *item, QuadroAnimacao *
             // 1. Desenha a carcaça da TV
             DrawTexturePro( rm.texturaItens, qa->fonte, item->ret, (Vector2){ 0 }, 0.0f, tonalidade );
             
-            // 2. Desenha o Ícone do Escudo no centro da tela da TV (Offset X+8, Y+6)
+            // 2. Desenha o Ícone do Escudo
             Rectangle fonteIcone = { 69, 102, 16, 16 };
-            Rectangle destIcone = { item->ret.x + 8, item->ret.y + 6, 16, 16 };
+            Rectangle destIcone = { 
+                item->ret.x + 16, 
+                item->ret.y + 12, 
+                32, 
+                32 
+            };
             DrawTexturePro( rm.texturaItens, fonteIcone, destIcone, (Vector2){ 0 }, 0.0f, tonalidade );
+            
         } else {
-            Rectangle destDestruida = { item->ret.x, item->ret.y + 16, 32, 16 };
+            // TV Destruída
+            Rectangle destDestruida = { 
+                item->ret.x, 
+                item->ret.y + 32, 
+                64, 
+                32 
+            };
             DrawTexturePro( rm.texturaItens, qa->fonte, destDestruida, (Vector2){ 0 }, 0.0f, tonalidade );
         }
     }

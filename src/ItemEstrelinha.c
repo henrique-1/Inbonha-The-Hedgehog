@@ -25,7 +25,7 @@ ItemEstrelinha *criarItemEstrelinha( Rectangle ret, Color cor ) {
     criarQuadrosAnimacao( &novo->animacaoParado, novo->animacaoParado.quantidadeQuadros );
     // Fonte da TV Intacta: 1, 69, 32, 32
     inicializarQuadrosAnimacao( novo->animacaoParado.quadros, 1, 1000,
-        1, 69, 32, 32, 0, false, (Rectangle) { 0, 0, 32, 32 } );
+        1, 69, 32, 32, 0, false, (Rectangle) { 0, 0, 64, 64 } );
 
     // Animação 2: TV Destruída (1 Quadro)
     novo->animacaoColetando.quantidadeQuadros = 1;
@@ -56,8 +56,6 @@ void destruirItemEstrelinha( ItemEstrelinha *item ) {
 void atualizarItemEstrelinha( ItemEstrelinha *item, float delta ) {
     if ( item->ativo ) {
         atualizarAnimacao( getAnimacaoAtualItemEstrelinha( item ), delta );
-        // Nota: Removido o item->ativo = false. 
-        // A carcaça da TV destruída continuará sendo desenhada no chão como cenário.
     }
 }
 
@@ -76,18 +74,29 @@ static Animacao *getAnimacaoAtualItemEstrelinha( ItemEstrelinha *item ) {
 }
 
 static void desenharQuadroAnimacaoItemEstrelinha( ItemEstrelinha *item, QuadroAnimacao *qa, Color tonalidade ) {
-    if ( qa != NULL ) {
+   if ( qa != NULL ) {
         if ( item->estado == ESTADO_ITEM_ESTRELINHA_PARADO ) {
-            // 1. Desenha a carcaça da TV
+            // 1. Desenha a carcaça da TV (item->ret agora já é perfeitamente 64x64 no mapa)
             DrawTexturePro( rm.texturaItens, qa->fonte, item->ret, (Vector2){ 0 }, 0.0f, tonalidade );
             
-            // 2. Desenha o Ícone da Estrelinha no centro da tela da TV (Offset X+8, Y+6)
+            // 2. Desenha o Ícone da Estrelinha
             Rectangle fonteIcone = { 35, 102, 16, 16 };
-            Rectangle destIcone = { item->ret.x + 8, item->ret.y + 6, 16, 16 };
+            Rectangle destIcone = { 
+                item->ret.x + 16,  // Offset alinhado à tela da TV
+                item->ret.y + 12, 
+                32, 
+                32 
+            };
             DrawTexturePro( rm.texturaItens, fonteIcone, destIcone, (Vector2){ 0 }, 0.0f, tonalidade );
+            
         } else {
-            // TV Destruída: Ajustamos o Y em +16 para que a base continue tocando o chão (já que a altura caiu de 32 para 16)
-            Rectangle destDestruida = { item->ret.x, item->ret.y + 16, 32, 16 };
+            // TV Destruída (Empurramos o Y +32 para colar a base destruída no chão)
+            Rectangle destDestruida = { 
+                item->ret.x, 
+                item->ret.y + 32, 
+                64, 
+                32 
+            };
             DrawTexturePro( rm.texturaItens, qa->fonte, destDestruida, (Vector2){ 0 }, 0.0f, tonalidade );
         }
     }
