@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "Animacao.h"
 #include "GameWorld.h"
 #include "Jogador.h"
 #include "Macros.h"
@@ -49,6 +50,29 @@ GameWorld *createGameWorld( void ) {
     gw->faseAtual = 0; 
     gw->transicaoFase = false;
     gw->contadorTransicao = 0.0f;
+
+    gw->naTelaTitulo = true;
+    gw->animacaoTelaTitulo.quantidadeQuadros = 18;
+    gw->animacaoTelaTitulo.quadroAtual = 0;
+    gw->animacaoTelaTitulo.contadorTempoQuadro = 0.0f;
+    gw->animacaoTelaTitulo.pararNoUltimoQuadro = true;
+    gw->animacaoTelaTitulo.executarUmaVez = false;
+    gw->animacaoTelaTitulo.finalizada = false;
+    criarQuadrosAnimacao( &gw->animacaoTelaTitulo, 18 );
+
+    int frameIndex = 0;
+    for ( int linha = 0; linha < 6; linha++ ) {
+        for ( int coluna = 0; coluna < 3; coluna++ ) {
+            gw->animacaoTelaTitulo.quadros[frameIndex].duracao = 0.2f;
+            gw->animacaoTelaTitulo.quadros[frameIndex].fonte = (Rectangle) {
+                24 + coluna * (320 + 8), 
+                520 + linha * (224 + 8), 
+                320, 224                 
+            };
+            gw->animacaoTelaTitulo.quadros[frameIndex].retColisao = (Rectangle){0};
+            frameIndex++;
+        }
+    }
     
     inicializar( gw );
     return gw;
@@ -59,6 +83,7 @@ GameWorld *createGameWorld( void ) {
  */
 void destroyGameWorld( GameWorld *gw ) {
     if ( gw != NULL ) {
+        destruirQuadrosAnimacao( &gw->animacaoTelaTitulo );
         destruirMapa( gw->mapa );
         destruirJogador( gw->jogador );
         free( gw );
@@ -69,6 +94,24 @@ void destroyGameWorld( GameWorld *gw ) {
  * @brief Lê a entrada do usuário e atualiza o estado do jogo.
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
+
+    // 0. MÁQUINA DE ESTADOS: Verifica se está na Tela de Título
+    if ( gw->naTelaTitulo ) {
+        int quadroAnterior = gw->animacaoTelaTitulo.quadroAtual;
+        atualizarAnimacao( &gw->animacaoTelaTitulo, delta );
+
+        if ( quadroAnterior == 17 && gw->animacaoTelaTitulo.quadroAtual == 0 ) {
+            gw->animacaoTelaTitulo.quadroAtual = 15;
+            gw->animacaoTelaTitulo.contadorTempoQuadro = 0.0f;
+        }
+
+        if ( GetKeyPressed() != 0 || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_MIDDLE_RIGHT) ) {
+            gw->naTelaTitulo = false;
+            PlaySound( rm.somAnel ); 
+        }
+        
+        return; // Interrompe a atualização do resto do jogo enquanto estiver no Menu
+    }
 
     Jogador *j = gw->jogador;
 
@@ -222,19 +265,55 @@ void updateGameWorld( GameWorld *gw, float delta ) {
  */
 void drawGameWorld( GameWorld *gw ) {
 
-    BeginDrawing();
-    ClearBackground( (Color) { 36, 0, 180, 255 } );
+    if ( gw->naTelaTitulo ) {
+        
+        BeginDrawing();
+        ClearBackground( BLACK );
 
-    BeginMode2D( gw->camera );
-    desenharFundo( gw );
-    desenharMapa( gw->mapa );
-    desenharJogador( gw->jogador );
-    EndMode2D();
+        QuadroAnimacao *qa = getQuadroAtualAnimacao( &gw->animacaoTelaTitulo );
+        float escala = 2.0f; 
+        
+        // Centraliza a imagem da tela de título na janela
+        Rectangle dest = {
+            (GetScreenWidth() / 2.0f) - ((320 * escala) / 2.0f),
+            (GetScreenHeight() / 2.0f) - ((224 * escala) / 2.0f),
+            320 * escala, 224 * escala
+        };
 
-    desenharHUD( gw );
-    DrawFPS( GetScreenWidth() - 100, 10 );
+        DrawTexturePro( rm.texturaTelaTitulo, qa->fonte, dest, (Vector2){0}, 0.0f, WHITE );
 
-    EndDrawing();
+        // Desenha o PRESS START piscando
+        if ( (int)(GetTime() * 2) % 2 == 0 ) {
+            Rectangle fontePressStart = { 552, 1992, 144, 8 };
+            float escalaPressStart = 2.0f; 
+            
+            Rectangle destPressStart = {
+                (GetScreenWidth() / 2.0f) - ((144 * escalaPressStart) / 2.0f),
+                dest.y + dest.height - 72.0f, 
+                144 * escalaPressStart, 
+                8 * escalaPressStart
+            };
+
+            DrawTexturePro( rm.texturaTelaTitulo, fontePressStart, destPressStart, (Vector2){0}, 0.0f, WHITE );
+        }
+
+        EndDrawing();
+        
+    } else {
+        BeginDrawing();
+        ClearBackground( (Color) { 36, 0, 180, 255 } );
+
+        BeginMode2D( gw->camera );
+        desenharFundo( gw );
+        desenharMapa( gw->mapa );
+        desenharJogador( gw->jogador );
+        EndMode2D();
+
+        desenharHUD( gw );
+        DrawFPS( GetScreenWidth() - 100, 10 );
+
+        EndDrawing();
+    }    
 }
 
 static void desenharHUD( GameWorld *gw ) {

@@ -464,6 +464,9 @@ typedef struct GameWorld {
     bool gameOver;
     bool timeOver;
 
+    bool naTelaTitulo;
+    Animacao animacaoTelaTitulo;
+
 } GameWorld;
 
 typedef struct ItemGoalPost {
