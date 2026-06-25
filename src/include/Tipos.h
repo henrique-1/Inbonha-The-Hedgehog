@@ -461,6 +461,9 @@ typedef struct GameWorld {
     bool transicaoFase;
     float contadorTransicao;
 
+    bool gameOver;
+    bool timeOver;
+
 } GameWorld;
 
 typedef struct ItemGoalPost {

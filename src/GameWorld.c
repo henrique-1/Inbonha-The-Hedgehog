@@ -70,6 +70,32 @@ void destroyGameWorld( GameWorld *gw ) {
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
 
+    Jogador *j = gw->jogador;
+
+    // ========================================================================
+    // 1. ESTADO DE GAME OVER OU TIME OVER ATIVO
+    // ========================================================================
+    if ( gw->gameOver || gw->timeOver ) {
+        // Pausa as músicas
+        if ( IsMusicStreamPlaying( rm.musicaFase01 ) ) StopMusicStream( rm.musicaFase01 );
+        if ( IsMusicStreamPlaying( rm.musicaInvencibilidade ) ) StopMusicStream( rm.musicaInvencibilidade );
+
+        // Continua atualizando apenas a gravidade do jogador (para ele cair fora da tela)
+        if ( j->ret.y <= (float)calcularAlturaMapa(gw->mapa) + 1000.0f ) {
+            atualizarJogador( j, gw, delta );
+        }
+
+        // Aguarda jogador apertar qualquer tecla para reiniciar todo o jogo
+        if ( GetKeyPressed() != 0 || (IsGamepadAvailable(0) && IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) ) {
+            gw->faseAtual = 0; // Retorna para a primeira fase
+            gw->gameOver = false;
+            gw->timeOver = false;
+            reiniciar( gw, true ); // Reinicia zerando vidas, pontos e recriando mapa
+        }
+        
+        return; // Retorna cedo para CONGELAR tempo, HUD, inimigos e câmera
+    }
+
     if ( gw->jogador->temEstrela && gw->jogador->estado != ESTADO_JOGADOR_MORTO ) {
         
         // 1. Pausa a música normal da fase
@@ -106,7 +132,21 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
     gw->tempoDecorrido += delta;
 
-    Jogador *j = gw->jogador;
+    // ========================================================================
+    // 2. CHECAGEM DE TIME OVER
+    // ========================================================================
+    // Em Sonic clássico, o limite é 9:59 (599 segundos).
+    if ( gw->tempoDecorrido >= 599.0f ) {
+        matarJogador( j );
+        gw->timeOver = true;
+    }
+
+    // ========================================================================
+    // 3. CHECAGEM DE GAME OVER (Morto por Inimigo / Espinho)
+    // ========================================================================
+    if ( j->estado == ESTADO_JOGADOR_MORTO && j->quantidadeVidas < 0 && !gw->timeOver ) {
+        gw->gameOver = true;
+    }
 
     // 1. CHECAGEM DO GOAL POST
     ElementoMapa *el = gw->mapa->itens;
@@ -163,6 +203,10 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
     float alturaMapa = (float) calcularAlturaMapa( gw->mapa );
     if ( j->ret.y > alturaMapa + 100.0f ) {
+        if ( j->estado != ESTADO_JOGADOR_MORTO ) {
+            matarJogador( j ); // Desconta vida se caiu num buraco sem ter tocado inimigo
+        }
+
         if ( j->quantidadeVidas >= 0 ) {
             // Perdeu uma vida, mas ainda tem saldo. Recarrega o mapa preservando as vidas.
             reiniciar( gw, false ); 
@@ -291,6 +335,39 @@ static void desenharHUD( GameWorld *gw ) {
     // A unidade sempre aparece na posição absoluta 43 relativa, alinhando visualmente à direita
     Vector2 posVidasUnidade = { margemEsquerda + 43.0f, yVidas + 10.0f };
     desenharNumeroHUD( rm.texturaHudNumerosPontos, unidadeVidas, posVidasUnidade, 1, 8.0f, 8.0f );
+
+    // ========================================================================
+    // --- MENSAGENS DE GAME OVER E TIME OVER ---
+    // ========================================================================
+    if ( gw->gameOver || gw->timeOver ) {
+        
+        Rectangle fonteOrigem;
+        
+        // Aplica os recortes que você forneceu
+        if ( gw->gameOver ) {
+            fonteOrigem = (Rectangle){ 456, 95, 144, 16 };
+        } else { 
+            fonteOrigem = (Rectangle){ 456, 119, 136, 16 };
+        }
+
+        // Multiplicador de escala da interface (ajuste se necessário para padronizar com o seu HUD)
+        float escala = 2.0f; 
+        
+        // Lógica para centralizar as sprites perfeitamente no meio da janela
+        Vector2 posicao = {
+            (GetScreenWidth() - (fonteOrigem.width * escala)) / 2.0f,
+            (GetScreenHeight() - (fonteOrigem.height * escala)) / 2.0f
+        };
+
+        DrawTexturePro( 
+            rm.texturaObjetos, 
+            fonteOrigem, 
+            (Rectangle){ posicao.x, posicao.y, fonteOrigem.width * escala, fonteOrigem.height * escala }, 
+            (Vector2){ 0 }, 
+            0.0f, 
+            WHITE 
+        );
+    }
 }
 
 static void desenharFundo( GameWorld *gw ) {
@@ -354,6 +431,9 @@ static void inicializar( GameWorld *gw ) {
 
     gw->gravidade = 900;
     gw->tempoDecorrido = 0.0f;
+
+    gw->gameOver = false;
+    gw->timeOver = false;
 
 }
 
