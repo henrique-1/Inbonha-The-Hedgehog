@@ -110,7 +110,8 @@ typedef enum TipoItem {
     TIPO_ITEM_ANEL,
     TIPO_ITEM_ANEL_AZUL,
     TIPO_ITEM_ESTRELINHA,
-    TIPO_ITEM_ESCUDO
+    TIPO_ITEM_ESCUDO,
+    TIPO_ITEM_GOAL_POST
 } TipoItem;
 
 /**
@@ -121,6 +122,12 @@ typedef enum TipoElementoMapa {
     TIPO_ELEMENTO_MAPA_ITEM,
     TIPO_ELEMENTO_MAPA_INIMIGO,
 } TipoElementoMapa;
+
+typedef enum EstadoItemGoalPost {
+    ESTADO_ITEM_GOAL_POST_PARADO,
+    ESTADO_ITEM_GOAL_POST_GIRANDO,
+    ESTADO_ITEM_GOAL_POST_FINALIZADO,
+} EstadoItemGoalPost;
 
 /**
  * @brief Representa um quadro de animação com imagem.
@@ -142,6 +149,9 @@ typedef struct Animacao {
     bool pararNoUltimoQuadro;
     bool executarUmaVez;
     bool finalizada;
+
+    bool loopParcial;
+    int quadroInicioLoop;
 } Animacao;
 
 /**
@@ -447,4 +457,22 @@ typedef struct GameWorld {
     float gravidade;
     float tempoDecorrido;
 
+    int faseAtual;
+    bool transicaoFase;
+    float contadorTransicao;
+
 } GameWorld;
+
+typedef struct ItemGoalPost {
+    Rectangle ret;
+    Color cor;
+
+    EstadoItemGoalPost estado;
+    bool ativo;
+
+    int contadorTotalGiros;
+    float contadorTempoQuadro;
+    int quadroAtualGiro; // Gerencia a transição entre as posições 2, 3 e 4
+    
+    Rectangle quadros[5]; // Armazena as 5 áreas de recorte mapeadas
+} ItemGoalPost;

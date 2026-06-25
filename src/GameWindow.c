@@ -58,7 +58,7 @@ GameWindow *createGameWindow(
     gameWindow->animacaoTelaTitulo.quadroAtual = 0;
     gameWindow->animacaoTelaTitulo.contadorTempoQuadro = 0.0f;
     gameWindow->animacaoTelaTitulo.pararNoUltimoQuadro = true;
-    gameWindow->animacaoTelaTitulo.executarUmaVez = true;
+    gameWindow->animacaoTelaTitulo.executarUmaVez = false;
     gameWindow->animacaoTelaTitulo.finalizada = false;
     criarQuadrosAnimacao( &gameWindow->animacaoTelaTitulo, 18 );
 
@@ -125,8 +125,18 @@ void initGameWindow( GameWindow *gameWindow ) {
             // MÁQUINA DE ESTADOS DA JANELA (TÍTULO VS JOGO)
             if ( gameWindow->naTelaTitulo ) {
                 
-                // 1. Atualiza Animação
+                // 1. Atualiza Animação com Regra de Loop Customizada
+                int quadroAnterior = gameWindow->animacaoTelaTitulo.quadroAtual;
+                
                 atualizarAnimacao( &gameWindow->animacaoTelaTitulo, delta );
+
+                // Como a animação tem 18 imagens (índices de 0 a 17), se o quadro 
+                // anterior era o 17 e o motor de animação o reiniciou para o 0, 
+                // nós o interceptamos e forçamos a voltar para o índice 15 (as 3 últimas).
+                if ( quadroAnterior == 17 && gameWindow->animacaoTelaTitulo.quadroAtual == 0 ) {
+                    gameWindow->animacaoTelaTitulo.quadroAtual = 15;
+                    gameWindow->animacaoTelaTitulo.contadorTempoQuadro = 0.0f;
+                }
 
                 // 2. Escuta Entradas do Jogador para iniciar a fase
                 if ( GetKeyPressed() != 0 || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_MIDDLE_RIGHT) ) {
@@ -138,23 +148,49 @@ void initGameWindow( GameWindow *gameWindow ) {
                 BeginDrawing();
                 ClearBackground( BLACK );
 
+                // ====================================================================
+                // ANIMAÇÃO 1: A Arte Principal da Tela de Título (Roda desde o início)
+                // ====================================================================
                 QuadroAnimacao *qa = getQuadroAtualAnimacao( &gameWindow->animacaoTelaTitulo );
                 float escala = 2.0f; // Multiplicador de tamanho
                 
-                // Centraliza a imagem na janela
+                // Centraliza a imagem da tela de título na janela
                 Rectangle dest = {
                     (gameWindow->width / 2.0f) - ((320 * escala) / 2.0f),
                     (gameWindow->height / 2.0f) - ((224 * escala) / 2.0f),
                     320 * escala, 224 * escala
                 };
 
+                // Desenha a tela de título (Fundo + Sonic)
                 DrawTexturePro( rm.texturaTelaTitulo, qa->fonte, dest, (Vector2){0}, 0.0f, WHITE );
 
-                // Efeito pisca-pisca clássico de PRESS START
+
+                // ====================================================================
+                // ANIMAÇÃO 2: O Texto "PRESS START" (Executa em paralelo perfeitamente)
+                // ====================================================================
+                // Removida a trava de quadros para que o pisca-pisca aconteça simultaneamente
                 if ( (int)(GetTime() * 2) % 2 == 0 ) {
-                    const char* msg = "PRESS ANY BUTTON TO START";
-                    int fontSize = 20;
-                    DrawText( msg, (gameWindow->width / 2) - (MeasureText(msg, fontSize) / 2), dest.y + dest.height - 40, fontSize, RAYWHITE );
+                    
+                    Rectangle fontePressStart = { 552, 1992, 144, 8 };
+                    float escalaPressStart = 2.0f; // Mantém a proporção da tela
+                    
+                    // Centraliza horizontalmente e posiciona perto do rodapé da arte principal
+                    Rectangle destPressStart = {
+                        (gameWindow->width / 2.0f) - ((144 * escalaPressStart) / 2.0f),
+                        dest.y + dest.height - 72.0f, // 48 pixels acima da base da imagem principal
+                        144 * escalaPressStart, 
+                        8 * escalaPressStart
+                    };
+
+                    // Desenha a sprite do texto por cima da arte principal em tempo real
+                    DrawTexturePro( 
+                        rm.texturaTelaTitulo, 
+                        fontePressStart, 
+                        destPressStart, 
+                        (Vector2){0}, 
+                        0.0f, 
+                        WHITE 
+                    );
                 }
 
                 EndDrawing();

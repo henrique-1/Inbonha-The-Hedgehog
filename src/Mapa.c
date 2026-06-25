@@ -22,6 +22,7 @@
 #include "ItemAnelAzul.h"
 #include "ItemEstrelinha.h"
 #include "ItemEscudo.h"
+#include "ItemGoalPost.h"
 #include "Obstaculo.h"
 #include "Tipos.h"
 #include "ResourceManager.h"
@@ -173,6 +174,21 @@ Mapa *carregarMapa( const char *caminhoArquivo ) {
                                     .y = novoMapa->dimensaoPadraoElementos * (linhaAtual + 1) - 64, 
                                     .width = 64, 
                                     .height = 64
+                                },
+                                WHITE
+                            );
+                            el->objeto = item;
+                            el->tipo = TIPO_ELEMENTO_MAPA_ITEM;
+                            break;
+
+                        case 'g':
+                            item = criarItem( TIPO_ITEM_GOAL_POST );
+                            item->objeto = criarItemGoalPost( 
+                                (Rectangle) { 
+                                    .x = novoMapa->dimensaoPadraoElementos * colunaAtual, 
+                                    .y = novoMapa->dimensaoPadraoElementos * (linhaAtual + 1) - 48, // Ajustado ao chão
+                                    .width = 48, 
+                                    .height = 48
                                 },
                                 WHITE
                             );

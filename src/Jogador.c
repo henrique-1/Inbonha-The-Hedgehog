@@ -824,30 +824,36 @@ static void resolverColisaoJogadorInimigosMapa( Jogador *j, Mapa *mapa ) {
             float deslocX = *olhandoParaDireita ? ret->width - qaInimigo->retColisao.x - qaInimigo->retColisao.width : qaInimigo->retColisao.x;
             Rectangle retColInimigoCalculado = { ret->x + deslocX, ret->y + qaInimigo->retColisao.y, qaInimigo->retColisao.width, qaInimigo->retColisao.height };
 
+            // === NOVA LÓGICA DE COLISÃO DO SPIKE ===
             if ( CheckCollisionRecs( retColCalculado, retColInimigoCalculado ) ) {
-                if ( j->temEstrela ) {
+                
+                // 1. O Spike SÓ morre se o jogador tiver o escudo
+                if ( j->temEscudo ) {
                     spikes->estado = ESTADO_INIMIGO_SPIKES_MORRENDO;
+                    j->vel.y = j->velPulo; // Faz o jogador quicar no spike após destruí-lo
                     PlaySound( rm.somHitInimigo );
                     j->pontuacao += 100;
-                } else if ( j->estado >= ESTADO_JOGADOR_PULANDO && j->estado <= ESTADO_JOGADOR_PULANDO_CORRENDO ) {
-                    j->vel.y = j->velPulo;
-                    spikes->estado = ESTADO_INIMIGO_SPIKES_MORRENDO;
-                    PlaySound( rm.somHitInimigo );
-                    j->pontuacao += 100;
-                } else if ( !j->invulneravel ) {
-                    if ( j->temEscudo ) {
-                        j->temEscudo = false;
-                        j->invulneravel = true;
-                        j->tempoInvulnerabilidade = 3.0f;
-                        j->contadorTempoInvulnerabilidade = 0.0f;
-                        PlaySound( rm.somHitInimigo ); 
-                    } else if ( j->quantidadeAneis > 0 ) {
+                    
+                    // Nota: Se você quiser que o jogador PERCA o escudo ao destruir o spike, 
+                    // descomente as linhas abaixo:
+                    // j->temEscudo = false;
+                    // j->invulneravel = true;
+                    // j->tempoInvulnerabilidade = 3.0f;
+                    // j->contadorTempoInvulnerabilidade = 0.0f;
+
+                } 
+                // 2. Se não tiver escudo, o Spike dá dano (mesmo se o jogador estiver pulando)
+                else if ( !j->invulneravel ) {
+                    // Se o jogador tiver anéis, ele perde os anéis
+                    if ( j->quantidadeAneis > 0 ) {
                         j->quantidadeAneis = 0;
                         PlaySound( rm.somHitComAnel );
                         j->invulneravel = true;
                         j->tempoInvulnerabilidade = 3.0f; 
                         j->contadorTempoInvulnerabilidade = 0.0f;
-                    } else {
+                    } 
+                    // Se não tiver anéis e não tiver escudo, ele morre
+                    else {
                         matarJogador( j );
                     }
                 }

@@ -15,6 +15,7 @@
 #include "ItemAnelAzul.h"
 #include "ItemEstrelinha.h"
 #include "ItemEscudo.h"
+#include "ItemGoalPost.h"
 #include "Tipos.h"
 
 /**
@@ -48,6 +49,9 @@ void destruirItem( Item *item ) {
             case TIPO_ITEM_ESCUDO:
                 destruirItemEscudo( (ItemEscudo*) item->objeto );
                 break;
+            case TIPO_ITEM_GOAL_POST:
+                destruirItemGoalPost( (ItemGoalPost*) item->objeto);
+                break;
             default:
                 break;
         }
@@ -73,6 +77,9 @@ void atualizarItem( Item *item, float delta ) {
         case TIPO_ITEM_ESCUDO:
             atualizarItemEscudo( (ItemEscudo*) item->objeto, delta );
             break;
+        case TIPO_ITEM_GOAL_POST:
+            atualizarItemGoalPost( (ItemGoalPost*) item->objeto, delta);
+            break;
         default:
             return;
     }
@@ -96,6 +103,9 @@ void desenharItem( Item *item ) {
             break;
         case TIPO_ITEM_ESCUDO:
             desenharItemEscudo( (ItemEscudo*) item->objeto );
+            break;
+        case TIPO_ITEM_GOAL_POST:
+            desenharItemGoalPost( (ItemGoalPost*) item->objeto);
             break;
         default:
             return;

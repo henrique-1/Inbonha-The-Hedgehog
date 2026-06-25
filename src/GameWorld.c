@@ -24,6 +24,14 @@
 //#include "raylib/raygui.h"       // other compilation units must only include
 //#undef RAYGUI_IMPLEMENTATION     // raygui.h
 
+// Definição da ordem das fases
+static const char *ARQUIVOS_MAPAS[] = {
+    "resources/mapas/mapa01.txt",
+    "resources/mapas/mapa02.txt"
+    // Adicione mapa03.txt, etc, conforme for criando
+};
+static const int TOTAL_FASES = 2; // Atualize esse número conforme adicionar mapas
+
 static void desenharFundo( GameWorld *gw );
 static void atualizarCamera( GameWorld *gw );
 
@@ -37,6 +45,11 @@ static void desenharHUD( GameWorld *gw );
  */
 GameWorld *createGameWorld( void ) {
     GameWorld *gw = (GameWorld*) malloc( sizeof( GameWorld ) );
+    
+    gw->faseAtual = 0; 
+    gw->transicaoFase = false;
+    gw->contadorTransicao = 0.0f;
+    
     inicializar( gw );
     return gw;
 }
@@ -94,6 +107,55 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     gw->tempoDecorrido += delta;
 
     Jogador *j = gw->jogador;
+
+    // 1. CHECAGEM DO GOAL POST
+    ElementoMapa *el = gw->mapa->itens;
+    while ( el != NULL ) {
+        Item *item = (Item*) el->objeto;
+        if ( item->tipo == TIPO_ITEM_GOAL_POST ) {
+            ItemGoalPost *gp = (ItemGoalPost*) item->objeto;
+            
+            // Ativa o Goal Post se o jogador correr passando pela placa
+            if ( gp->estado == ESTADO_ITEM_GOAL_POST_PARADO && j->ret.x >= gp->ret.x ) {
+                gp->estado = ESTADO_ITEM_GOAL_POST_GIRANDO;
+                gw->transicaoFase = true;
+                gw->contadorTransicao = 0.0f;
+            }
+        }
+        el = el->proximo;
+    }
+
+    // 2. CONTROLE DA MUDANÇA DE FASE
+    if ( gw->transicaoFase ) {
+        gw->contadorTransicao += delta;
+        
+        // Bloqueia controle do jogador e o faz sair correndo sozinho da tela
+        j->vel.x = j->velAndandoRapido; 
+        j->olhandoParaDireita = true;
+        if( j->estado != ESTADO_JOGADOR_PULANDO && j->estado != ESTADO_JOGADOR_PULANDO_CORRENDO ) {
+            j->estado = ESTADO_JOGADOR_CORRENDO;
+        }
+
+        // Aguarda 4 segundos para o Sonic sair da tela e a Placa terminar de rodar
+        if ( gw->contadorTransicao >= 4.0f ) {
+            gw->faseAtual++;
+            
+            // Sistema circular de fases
+            if ( gw->faseAtual >= TOTAL_FASES ) {
+                gw->faseAtual = 0; 
+            }
+            
+            gw->transicaoFase = false;
+            gw->contadorTransicao = 0.0f;
+            
+            reiniciar( gw, false ); // Aproveita sua arquitetura de preservação de saldo
+            return;
+        }
+    } else {
+        // Apenas escuta os controles normais se NÃO estiver finalizando a fase
+        entradaJogador( j, delta );
+    }
+
     atualizarMapa( gw->mapa, gw, delta );
     entradaJogador( j, delta );
     atualizarJogador( j, gw, delta );
@@ -280,7 +342,7 @@ static void atualizarCamera( GameWorld *gw ) {
 static void inicializar( GameWorld *gw ) {
 
     //gw->mapa = carregarMapa( "resources/mapas/mapaTeste.txt" );
-    gw->mapa = carregarMapa( "resources/mapas/mapa01.txt" );
+    gw->mapa = carregarMapa( ARQUIVOS_MAPAS[gw->faseAtual] );
     gw->jogador = criarJogador( GetScreenWidth() / 2 + 144, calcularAlturaMapa( gw->mapa ) - 196, 96, 96 );
 
     gw->camera = (Camera2D) {

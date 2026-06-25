@@ -19,6 +19,7 @@ typedef struct GameWindow {
 
     bool naTelaTitulo;
     Animacao animacaoTelaTitulo;
+    Animacao animacaoPressStart;
 
     int targetFPS;
     bool antialiasing;
