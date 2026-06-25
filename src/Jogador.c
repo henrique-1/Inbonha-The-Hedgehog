@@ -675,7 +675,7 @@ static void resolverColisaoJogadorItensMapa( Jogador *j, Mapa *mapa ) {
 
             if ( CheckCollisionRecs( retColCalculado, retColItemCalculado ) ) {
                 itemAnelAzul->estado = ESTADO_ITEM_ANEL_AZUL_COLETADO;
-                j->quantidadeAneis--;
+                j->quantidadeMaxPulos = 3;
                 PlaySound( rm.somAnel );
             }
 
