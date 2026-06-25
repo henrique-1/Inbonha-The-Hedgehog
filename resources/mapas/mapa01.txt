@@ -1,17 +1,19 @@
-I                                                                                                                                                                                  L
-C                   a                                                                                                                                                              E
-C                  aM                                                                                                                                                              E
-C                 aM                         a                                                                                                                                     E
-C                aM          a        2     aaa                                                                                                                                    E
-C               aM          aaa            aaaaa                                                                                                                                   E
-C         a    aM          aLBIa          aaaaaaa                                                                                                                                  E
-C         Ma   M    a    aaLGAFIaa       aaaaaaaaa                                                                                                                                 E
-C          Ma      aM   LBBGAAAFBBI    LBBBBBBBBBBBI                                                                                                                               E
-C           Ma    aM    KDDDDDDDDDJ    KDDDDDDDDDDDJ                                                                                                                               E
-C            M   aM                                                                                                                                                                E
-C               aM                                                                                                                                                                 E
-C               M     2                                                                                                                                                            E
-C                                                                                                                                                                                  E
-C 0 0 0 0 M       e  s M   1   1   1   1   1   1   1   1   M  3                                                                g                                                   E
-FBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBG
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+I                                                                                                                 I                   
+C                                                                                                                 C                   
+C                                                                                                                 C                   
+C                                                                                                                 C                   
+C                                                                                                                 C                   
+C                                                                                                                 C                   
+C                                                                                                                 C                   
+C                                                                                                                 C                   
+C                                                                                                                 C                   
+C                                                                                                                 C                   
+C                                                                                             a                   C                   
+C                         a                                                                  aaa                  C                   
+C                       a   a                                                               aaaaa                 C                   
+C                     a       a            BBB              2                              BBBBBBB                C                   
+C                   BBB       BBB       1  AAA                                             AAAAAAA                C                   
+C                   AAA   0   AAA     BBBBBAAA   BBB                            e  3       AAAAAAA   s     1   g  C                   
+FBBBBBBBBBBBBBBBBG  AAAABBBBAAAAA   FBAAAAAAAAG FBAAAAABG   FBAAAAABG         FBBBBBBBBG   AAAAAAA FBBBBBBBBBBBBBBG                   
+AAAAAAAAAAAAAAAAAA  AAAAAAAAAAAAA   AAAAAAAAAAA AAAAAAAAA   AAAAAAAAA         AAAAAAAAAA   AAAAAAA AAAAAAAAAAAAAAAA                   
+AAAAAAAAAAAAAAAAAA  AAAAAAAAAAAAA   AAAAAAAAAAA AAAAAAAAA   AAAAAAAAA         AAAAAAAAAA   AAAAAAA AAAAAAAAAAAAAAAA
